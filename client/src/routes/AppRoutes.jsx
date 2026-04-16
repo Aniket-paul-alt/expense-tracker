@@ -3,6 +3,8 @@ import ProtectedRoute from "./protectedRoutes.jsx";
 import AppLayout from "../components/layout/AppLayout";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import Dashboard from "../pages/Dashboard";
+import Analytics from "../pages/Analytics";
 
 // Placeholder pages — replace one by one as you build each
 const Placeholder = ({ name }) => (
@@ -21,8 +23,8 @@ const AppRoutes = () => {
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path="/"          element={<Placeholder name="Dashboard" />} />
-          <Route path="/analytics" element={<Placeholder name="Analytics" />} />
+          <Route path="/"          element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/history"   element={<Placeholder name="History" />} />
           <Route path="/budget"    element={<Placeholder name="Budget" />} />
           <Route path="/settings"  element={<Placeholder name="Settings" />} />
