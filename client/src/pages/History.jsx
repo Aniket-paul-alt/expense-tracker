@@ -1,0 +1,304 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSelector, useDispatch } from "react-redux";
+import toast from "react-hot-toast";
+import expenseService from "../services/expenseServices";
+import { setPage } from "../features/expense/expenseSlice";
+import FilterBar    from "../components/expenses/FilterBar";
+import ExpenseCard  from "../components/expenses/ExpenseCard";
+import ExpenseForm  from "../components/expenses/ExpenseForm";
+import Modal        from "../components/ui/Modal";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+
+// ─── Skeleton row ──────────────────────────────────────────────────────────────
+
+const RowSkeleton = () => (
+  <div className="flex items-center gap-3 p-3">
+    <div className="w-10 h-10 rounded-xl bg-gray-100 animate-pulse flex-shrink-0"/>
+    <div className="flex-1 space-y-2">
+      <div className="h-3 bg-gray-100 rounded animate-pulse w-40"/>
+      <div className="h-2.5 bg-gray-100 rounded animate-pulse w-56"/>
+    </div>
+    <div className="h-4 bg-gray-100 rounded animate-pulse w-16"/>
+  </div>
+);
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+const Pagination = ({ pagination, onPageChange }) => {
+  if (!pagination || pagination.totalPages <= 1) return null;
+  const { currentPage, totalPages, totalCount } = pagination;
+
+  return (
+    <div className="flex items-center justify-between px-1">
+      <p className="text-xs text-gray-400">
+        {totalCount} transaction{totalCount !== 1 ? "s" : ""}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!pagination.hasPrevPage}
+          className="w-8 h-8 flex items-center justify-center rounded-lg
+            border border-gray-200 text-gray-500 disabled:opacity-40
+            hover:bg-gray-50 transition text-sm"
+        >
+          ‹
+        </button>
+
+        {/* Page numbers */}
+        {Array.from({ length: totalPages }, (_, i) => i + 1)
+          .filter((p) => p === 1 || p === totalPages ||
+            Math.abs(p - currentPage) <= 1)
+          .reduce((acc, p, i, arr) => {
+            if (i > 0 && p - arr[i - 1] > 1) {
+              acc.push("...");
+            }
+            acc.push(p);
+            return acc;
+          }, [])
+          .map((p, i) =>
+            p === "..." ? (
+              <span key={`dots-${i}`} className="w-8 text-center text-xs text-gray-400">
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPageChange(p)}
+                className={`w-8 h-8 rounded-lg text-xs font-medium transition
+                  ${p === currentPage
+                    ? "bg-indigo-600 text-white"
+                    : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+              >
+                {p}
+              </button>
+            )
+          )
+        }
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!pagination.hasNextPage}
+          className="w-8 h-8 flex items-center justify-center rounded-lg
+            border border-gray-200 text-gray-500 disabled:opacity-40
+            hover:bg-gray-50 transition text-sm"
+        >
+          ›
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── History Page ─────────────────────────────────────────────────────────────
+
+const History = () => {
+  const dispatch     = useDispatch();
+  const queryClient  = useQueryClient();
+  const filters      = useSelector((state) => state.expenses.filters);
+  const { user }     = useSelector((state) => state.auth);
+
+  const [addOpen,     setAddOpen]     = useState(false);
+  const [editExpense, setEditExpense] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // ── Fetch expenses ──
+  const { data, isLoading } = useQuery({
+    queryKey: ["expenses", filters],
+    queryFn:  () => expenseService.getAll(filters),
+    keepPreviousData: true,
+  });
+
+  const expenses   = data?.data || [];
+  const pagination = data?.pagination;
+
+  // ── Delete mutation ──
+  const deleteMutation = useMutation({
+    mutationFn: (id) => expenseService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      toast.success("Expense deleted");
+      setDeleteTarget(null);
+    },
+    onError: (err) => toast.error(err.message || "Failed to delete"),
+  });
+
+  // ── CSV Export ──
+  const handleExport = async () => {
+    try {
+      setExportLoading(true);
+      const blob = await expenseService.exportCSV(filters);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `expenses-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV downloaded!");
+    } catch {
+      toast.error("Export failed. No expenses match your filters.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          {/* Filter toggle */}
+          <button
+            onClick={() => setShowFilters((p) => !p)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border
+              text-sm font-medium transition
+              ${showFilters
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              }`}
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor"
+              strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="4" y1="6" x2="20" y2="6"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+              <line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+            Filters
+            {!showFilters && (filters.category || filters.startDate ||
+              filters.search || filters.paymentMethod) && (
+              <span className="w-2 h-2 rounded-full bg-indigo-500"/>
+            )}
+          </button>
+
+          {/* Export */}
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border
+              border-gray-200 bg-white text-gray-600 text-sm font-medium
+              hover:bg-gray-50 transition disabled:opacity-60"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor"
+              strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {exportLoading ? "Exporting..." : "Export CSV"}
+          </button>
+        </div>
+
+        {/* Add expense */}
+        <button
+          onClick={() => setAddOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600
+            hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition"
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor"
+            strokeWidth="2.5" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add expense
+        </button>
+      </div>
+
+      {/* Filter panel */}
+      {showFilters && <FilterBar />}
+
+      {/* Expense list */}
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+
+        {/* List header */}
+        <div className="flex items-center justify-between px-4 py-3
+          border-b border-gray-50">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+            Transactions
+          </p>
+          {pagination && (
+            <p className="text-xs text-gray-400">
+              {pagination.totalCount} total
+            </p>
+          )}
+        </div>
+
+        {/* Items */}
+        <div className="divide-y divide-gray-50">
+          {isLoading ? (
+            Array(8).fill(0).map((_, i) => <RowSkeleton key={i}/>)
+          ) : expenses.length ? (
+            expenses.map((expense) => (
+              <ExpenseCard
+                key={expense._id}
+                expense={expense}
+                onEdit={(e) => setEditExpense(e)}
+                onDelete={(e) => setDeleteTarget(e)}
+              />
+            ))
+          ) : (
+            <div className="py-16 text-center">
+              <p className="text-2xl mb-2">🔍</p>
+              <p className="text-sm text-gray-400">No expenses found</p>
+              <p className="text-xs text-gray-300 mt-1">
+                Try adjusting your filters or add a new expense
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {pagination && expenses.length > 0 && (
+          <div className="px-4 py-4 border-t border-gray-50">
+            <Pagination
+              pagination={pagination}
+              onPageChange={(p) => dispatch(setPage(p))}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Add expense modal */}
+      <Modal
+        isOpen={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add expense"
+      >
+        <ExpenseForm
+          onSuccess={() => setAddOpen(false)}
+          onCancel={() => setAddOpen(false)}
+        />
+      </Modal>
+
+      {/* Edit expense modal */}
+      <Modal
+        isOpen={!!editExpense}
+        onClose={() => setEditExpense(null)}
+        title="Edit expense"
+      >
+        <ExpenseForm
+          expense={editExpense}
+          onSuccess={() => setEditExpense(null)}
+          onCancel={() => setEditExpense(null)}
+        />
+      </Modal>
+
+      {/* Delete confirm dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(deleteTarget?._id)}
+        isLoading={deleteMutation.isPending}
+        title="Delete expense"
+        message={`Delete "${deleteTarget?.note || deleteTarget?.category}" 
+          for ${deleteTarget?.amount}? This cannot be undone.`}
+      />
+    </div>
+  );
+};
+
+export default History;

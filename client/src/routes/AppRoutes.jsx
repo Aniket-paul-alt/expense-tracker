@@ -5,6 +5,9 @@ import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import Dashboard from "../pages/Dashboard";
 import Analytics from "../pages/Analytics";
+import History from "../pages/History";
+import Budget from "../pages/Budget";
+import Settings from "../pages/Settings";
 
 // Placeholder pages — replace one by one as you build each
 const Placeholder = ({ name }) => (
@@ -25,9 +28,9 @@ const AppRoutes = () => {
         <Route element={<AppLayout />}>
           <Route path="/"          element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/history"   element={<Placeholder name="History" />} />
-          <Route path="/budget"    element={<Placeholder name="Budget" />} />
-          <Route path="/settings"  element={<Placeholder name="Settings" />} />
+          <Route path="/history"   element={<History />} />
+          <Route path="/budget"    element={<Budget />} />
+          <Route path="/settings"  element={<Settings />} />
         </Route>
       </Route>
 

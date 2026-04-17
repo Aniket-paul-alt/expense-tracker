@@ -145,50 +145,50 @@ const validateExpenseId = [
 
 const validateExpenseQuery = [
   query("startDate")
-    .optional()
+    .optional({ values: "falsy" })
     .isISO8601().withMessage("startDate must be a valid date")
     .toDate(),
 
   query("endDate")
-    .optional()
+    .optional({ values: "falsy" })
     .isISO8601().withMessage("endDate must be a valid date")
     .toDate(),
 
   query("category")
-    .optional()
+    .optional({ values: "falsy" })
     .trim()
     .isLength({ max: 30 }).withMessage("Category filter too long"),
 
   query("paymentMethod")
-    .optional()
+    .optional({ values: "falsy" })
     .isIn(["cash", "upi", "card", "netbanking", "wallet", "other"])
     .withMessage("Invalid payment method filter"),
 
   query("minAmount")
-    .optional()
+    .optional({ values: "falsy" })
     .isFloat({ min: 0 }).withMessage("minAmount must be a positive number"),
 
   query("maxAmount")
-    .optional()
+    .optional({ values: "falsy" })
     .isFloat({ min: 0 }).withMessage("maxAmount must be a positive number"),
 
   query("page")
-    .optional()
+    .optional({ values: "falsy" })
     .isInt({ min: 1 }).withMessage("Page must be a positive integer")
     .toInt(),
 
   query("limit")
-    .optional()
+    .optional({ values: "falsy" })
     .isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100")
     .toInt(),
 
   query("sortBy")
-    .optional()
+    .optional({ values: "falsy" })
     .isIn(["date", "amount", "category", "createdAt"])
     .withMessage("Invalid sort field"),
 
   query("order")
-    .optional()
+    .optional({ values: "falsy" })
     .isIn(["asc", "desc"])
     .withMessage("Order must be asc or desc"),
 
