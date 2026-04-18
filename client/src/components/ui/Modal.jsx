@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg" }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg", center = false }) => {
   // Close on Escape key
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -17,8 +17,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center
-      justify-center p-0 sm:p-4">
+    <div className={`fixed inset-0 z-[60] flex justify-center ${center ? "items-center p-4" : "items-end sm:items-center p-0 sm:p-4"}`}>
 
       {/* Backdrop */}
       <div

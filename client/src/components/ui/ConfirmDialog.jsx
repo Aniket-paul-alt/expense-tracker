@@ -10,7 +10,7 @@ const ConfirmDialog = ({
   isLoading = false,
   danger = true,
 }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-sm">
+  <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-sm" center>
     <p className="text-sm text-gray-500 mb-6">{message}</p>
     <div className="flex gap-3">
       <button

@@ -166,7 +166,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
 
       {/* Category */}
       <Field label="Category" error={errors.category?.message}>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.value;
             return (
