@@ -24,7 +24,11 @@ const fillMissingDays = (data, startDate, endDate) => {
 
   const cursor = new Date(startDate);
   while (cursor <= endDate) {
-    const key = cursor.toISOString().split("T")[0];
+    const yyyy = cursor.getFullYear();
+    const mm = String(cursor.getMonth() + 1).padStart(2, "0");
+    const dd = String(cursor.getDate()).padStart(2, "0");
+    const key = `${yyyy}-${mm}-${dd}`;
+
     result.push(
       dataMap[key] || { date: key, total: 0, count: 0 }
     );
