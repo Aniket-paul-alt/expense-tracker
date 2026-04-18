@@ -14,12 +14,12 @@ import ConfirmDialog from "../components/ui/ConfirmDialog";
 
 const RowSkeleton = () => (
   <div className="flex items-center gap-3 p-3">
-    <div className="w-10 h-10 rounded-xl bg-gray-100 animate-pulse flex-shrink-0"/>
+    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse flex-shrink-0"/>
     <div className="flex-1 space-y-2">
-      <div className="h-3 bg-gray-100 rounded animate-pulse w-40"/>
-      <div className="h-2.5 bg-gray-100 rounded animate-pulse w-56"/>
+      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-40"/>
+      <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-56"/>
     </div>
-    <div className="h-4 bg-gray-100 rounded animate-pulse w-16"/>
+    <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-16"/>
   </div>
 );
 
@@ -31,7 +31,7 @@ const Pagination = ({ pagination, onPageChange }) => {
 
   return (
     <div className="flex items-center justify-between px-1">
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-gray-400 dark:text-gray-500">
         {totalCount} transaction{totalCount !== 1 ? "s" : ""}
       </p>
       <div className="flex items-center gap-1">
@@ -39,8 +39,8 @@ const Pagination = ({ pagination, onPageChange }) => {
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!pagination.hasPrevPage}
           className="w-8 h-8 flex items-center justify-center rounded-lg
-            border border-gray-200 text-gray-500 disabled:opacity-40
-            hover:bg-gray-50 transition text-sm"
+            border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-40
+            hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm"
         >
           ‹
         </button>
@@ -58,7 +58,7 @@ const Pagination = ({ pagination, onPageChange }) => {
           }, [])
           .map((p, i) =>
             p === "..." ? (
-              <span key={`dots-${i}`} className="w-8 text-center text-xs text-gray-400">
+              <span key={`dots-${i}`} className="w-8 text-center text-xs text-gray-400 dark:text-gray-500">
                 …
               </span>
             ) : (
@@ -68,7 +68,7 @@ const Pagination = ({ pagination, onPageChange }) => {
                 className={`w-8 h-8 rounded-lg text-xs font-medium transition
                   ${p === currentPage
                     ? "bg-indigo-600 text-white"
-                    : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                   }`}
               >
                 {p}
@@ -81,8 +81,8 @@ const Pagination = ({ pagination, onPageChange }) => {
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!pagination.hasNextPage}
           className="w-8 h-8 flex items-center justify-center rounded-lg
-            border border-gray-200 text-gray-500 disabled:opacity-40
-            hover:bg-gray-50 transition text-sm"
+            border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-40
+            hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm"
         >
           ›
         </button>
@@ -159,7 +159,7 @@ const History = () => {
               text-sm font-medium transition
               ${showFilters
                 ? "bg-indigo-600 text-white border-indigo-600"
-                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
           >
             <svg width="14" height="14" fill="none" stroke="currentColor"
@@ -180,8 +180,8 @@ const History = () => {
             onClick={handleExport}
             disabled={exportLoading}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border
-              border-gray-200 bg-white text-gray-600 text-sm font-medium
-              hover:bg-gray-50 transition disabled:opacity-60"
+              border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 text-sm font-medium
+              hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-60"
           >
             <svg width="14" height="14" fill="none" stroke="currentColor"
               strokeWidth="2" viewBox="0 0 24 24">
@@ -212,23 +212,23 @@ const History = () => {
       {showFilters && <FilterBar />}
 
       {/* Expense list */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
 
         {/* List header */}
         <div className="flex items-center justify-between px-4 py-3
-          border-b border-gray-50">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+          border-b border-gray-50 dark:border-gray-800/50">
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">
             Transactions
           </p>
           {pagination && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               {pagination.totalCount} total
             </p>
           )}
         </div>
 
         {/* Items */}
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <RowSkeleton key={i}/>)
           ) : expenses.length ? (
@@ -243,8 +243,8 @@ const History = () => {
           ) : (
             <div className="py-16 text-center">
               <p className="text-2xl mb-2">🔍</p>
-              <p className="text-sm text-gray-400">No expenses found</p>
-              <p className="text-xs text-gray-300 mt-1">
+              <p className="text-sm text-gray-400 dark:text-gray-500">No expenses found</p>
+              <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
                 Try adjusting your filters or add a new expense
               </p>
             </div>
@@ -253,7 +253,7 @@ const History = () => {
 
         {/* Pagination */}
         {pagination && expenses.length > 0 && (
-          <div className="px-4 py-4 border-t border-gray-50">
+          <div className="px-4 py-4 border-t border-gray-50 dark:border-gray-800/50">
             <Pagination
               pagination={pagination}
               onPageChange={(p) => dispatch(setPage(p))}

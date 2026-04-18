@@ -7,9 +7,9 @@ import { formatCompact } from "../../utils/formatCurrency";
 const CustomTooltip = ({ active, payload, label, symbol }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="text-gray-500 mb-1">{label}</p>
-      <p className="font-semibold text-gray-900">
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-sm px-3 py-2 text-xs">
+      <p className="text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="font-semibold text-gray-900 dark:text-gray-100">
         {symbol}{Number(payload[0].value).toLocaleString("en-IN")}
       </p>
     </div>

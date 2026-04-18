@@ -86,24 +86,24 @@ const BudgetForm = ({ existing = null, onSuccess, onCancel }) => {
       : createMutation.mutate(payload);
   };
 
-  const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg \
-outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
+  const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg \
+outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
       {/* Category picker — disabled when editing */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-2">
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
           Category
         </label>
         {isEditing ? (
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50
-            border border-gray-200 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800
+            border border-gray-200 dark:border-gray-700 rounded-lg">
             <span style={{ fontSize: "18px" }}>
               {getCategoryIcon(existing.category)}
             </span>
-            <span className="text-sm font-medium text-gray-700 capitalize">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
               {existing.category}
             </span>
           </div>
@@ -118,8 +118,8 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
                     className={`flex flex-col items-center gap-1 p-2 rounded-lg
                       border cursor-pointer transition-all text-center
                       ${isSelected
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                       }`}
                   >
                     <input
@@ -130,7 +130,7 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
                     />
                     <span style={{ fontSize: "18px" }}>{cat.icon}</span>
                     <span className={`text-xs font-medium truncate w-full text-center
-                      ${isSelected ? "text-indigo-700" : "text-gray-600"}`}>
+                      ${isSelected ? "text-indigo-700 dark:text-indigo-400" : "text-gray-600 dark:text-gray-400"}`}>
                       {cat.label}
                     </span>
                   </label>
@@ -138,7 +138,7 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
               })}
             </div>
             {errors.category && (
-              <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>
+              <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.category.message}</p>
             )}
           </>
         )}
@@ -147,7 +147,7 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
       {/* Amount + period row */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
             Budget limit ({symbol})
           </label>
           <div className="relative">
@@ -163,12 +163,12 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
             />
           </div>
           {errors.amount && (
-            <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.amount.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
             Resets every
           </label>
           <select {...register("period")} className={inputClass}>
@@ -186,8 +186,8 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2.5 border border-gray-200 text-gray-600
-            text-sm font-medium rounded-lg hover:bg-gray-50 transition"
+          className="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300
+            text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
         >
           Cancel
         </button>
@@ -217,20 +217,20 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
   const icon   = getCategoryIcon(budget.category);
 
   const statusColors = {
-    safe:     { bar: color,      bg: "bg-green-50",  text: "text-green-700",  label: "On track"  },
-    warning:  { bar: "#f59e0b",  bg: "bg-amber-50",  text: "text-amber-700",  label: "Warning"   },
-    exceeded: { bar: "#ef4444",  bg: "bg-red-50",    text: "text-red-700",    label: "Exceeded"  },
+    safe:     { bar: color,      bg: "bg-green-50 dark:bg-green-900/10",  text: "text-green-700 dark:text-green-400",  label: "On track"  },
+    warning:  { bar: "#f59e0b",  bg: "bg-amber-50 dark:bg-amber-900/10",  text: "text-amber-700 dark:text-amber-400",  label: "Warning"   },
+    exceeded: { bar: "#ef4444",  bg: "bg-red-50 dark:bg-red-900/10",    text: "text-red-700 dark:text-red-400",    label: "Exceeded"  },
   };
 
   const s = statusColors[budget.status] || statusColors.safe;
 
   return (
-    <div className={`rounded-xl border p-4 space-y-3 transition
+    <div className={`rounded-xl border p-4 space-y-3 transition-colors
       ${budget.status === "exceeded"
-        ? "border-red-100 bg-red-50/30"
+        ? "border-red-100 dark:border-red-900/50 bg-red-50/30 dark:bg-red-900/5"
         : budget.status === "warning"
-        ? "border-amber-100 bg-amber-50/20"
-        : "border-gray-100 bg-white"
+        ? "border-amber-100 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-900/5"
+        : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
       }`}
     >
       {/* Header */}
@@ -243,10 +243,10 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
             <span style={{ fontSize: "18px" }}>{icon}</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900 capitalize">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">
               {budget.category}
             </p>
-            <p className="text-xs text-gray-400 capitalize">
+            <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">
               {budget.period} budget
             </p>
           </div>
@@ -263,7 +263,7 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
           <button
             onClick={() => onEdit(budget)}
             className="w-7 h-7 flex items-center justify-center rounded-lg
-              text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition"
+              text-gray-400 dark:text-gray-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
           >
             <svg width="13" height="13" fill="none" stroke="currentColor"
               strokeWidth="2" viewBox="0 0 24 24">
@@ -274,7 +274,7 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
           <button
             onClick={() => onDelete(budget)}
             className="w-7 h-7 flex items-center justify-center rounded-lg
-              text-gray-400 hover:bg-red-50 hover:text-red-500 transition"
+              text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 transition"
           >
             <svg width="13" height="13" fill="none" stroke="currentColor"
               strokeWidth="2" viewBox="0 0 24 24">
@@ -289,14 +289,14 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
       {/* Progress bar */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
             {formatCurrency(budget.spent, symbol)} spent
           </span>
-          <span className="text-xs font-semibold text-gray-700">
+          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
             {budget.percentage}%
           </span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
@@ -310,15 +310,15 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
       {/* Amounts row */}
       <div className="flex items-center justify-between pt-0.5">
         <div className="text-center">
-          <p className="text-xs text-gray-400">Spent</p>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-xs text-gray-400 dark:text-gray-500">Spent</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {formatCurrency(budget.spent, symbol)}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-400">Remaining</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Remaining</p>
           <p className={`text-sm font-semibold
-            ${budget.status === "exceeded" ? "text-red-600" : "text-green-600"}`}>
+            ${budget.status === "exceeded" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
             {budget.status === "exceeded"
               ? `-${formatCurrency(budget.spent - budget.budgetAmount, symbol)}`
               : formatCurrency(budget.remaining, symbol)
@@ -326,15 +326,15 @@ const BudgetCard = ({ budget, onEdit, onDelete }) => {
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-gray-400">Limit</p>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-xs text-gray-400 dark:text-gray-500">Limit</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {formatCurrency(budget.budgetAmount, symbol)}
           </p>
         </div>
       </div>
 
       {/* Period dates */}
-      <p className="text-xs text-gray-300 border-t border-gray-100 pt-2">
+      <p className="text-xs text-gray-300 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800/50 pt-2">
         {new Date(budget.periodStart).toLocaleDateString("en-IN", {
           day: "numeric", month: "short"
         })} — {new Date(budget.periodEnd).toLocaleDateString("en-IN", {
@@ -385,20 +385,20 @@ const Budget = () => {
 
   // ── Skeleton ──
   const BudgetSkeleton = () => (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-gray-100 animate-pulse"/>
+        <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse"/>
         <div className="space-y-1.5">
-          <div className="h-3 w-20 bg-gray-100 rounded animate-pulse"/>
-          <div className="h-2.5 w-16 bg-gray-100 rounded animate-pulse"/>
+          <div className="h-3 w-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"/>
+          <div className="h-2.5 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"/>
         </div>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full animate-pulse"/>
+      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse"/>
       <div className="flex justify-between">
         {Array(3).fill(0).map((_, i) => (
           <div key={i} className="space-y-1 text-center">
-            <div className="h-2.5 w-12 bg-gray-100 rounded animate-pulse mx-auto"/>
-            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse mx-auto"/>
+            <div className="h-2.5 w-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mx-auto"/>
+            <div className="h-4 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mx-auto"/>
           </div>
         ))}
       </div>
@@ -412,11 +412,11 @@ const Budget = () => {
       {(exceeded.length > 0 || warning.length > 0) && (
         <div className={`rounded-xl border px-4 py-3 flex items-start gap-3
           ${exceeded.length > 0
-            ? "bg-red-50 border-red-100"
-            : "bg-amber-50 border-amber-100"
+            ? "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30"
+            : "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30"
           }`}>
           <svg className={`mt-0.5 flex-shrink-0
-            ${exceeded.length > 0 ? "text-red-400" : "text-amber-400"}`}
+            ${exceeded.length > 0 ? "text-red-400 dark:text-red-500" : "text-amber-400 dark:text-amber-500"}`}
             width="16" height="16" fill="none" stroke="currentColor"
             strokeWidth="2" viewBox="0 0 24 24">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0
@@ -426,14 +426,14 @@ const Budget = () => {
           </svg>
           <div>
             {exceeded.length > 0 && (
-              <p className="text-sm font-medium text-red-700">
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">
                 {exceeded.length} budget{exceeded.length > 1 ? "s" : ""} exceeded —{" "}
                 {exceeded.map((b) => b.category).join(", ")}
               </p>
             )}
             {warning.length > 0 && (
               <p className={`text-sm font-medium
-                ${exceeded.length ? "text-red-600 mt-0.5" : "text-amber-700"}`}>
+                ${exceeded.length ? "text-red-600 dark:text-red-400 mt-0.5" : "text-amber-700 dark:text-amber-400"}`}>
                 {warning.length} budget{warning.length > 1 ? "s" : ""} near limit —{" "}
                 {warning.map((b) => b.category).join(", ")}
               </p>
@@ -445,7 +445,7 @@ const Budget = () => {
       {/* Header row */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-400 dark:text-gray-500">
             {budgets.length} budget{budgets.length !== 1 ? "s" : ""} set
           </p>
         </div>
@@ -453,8 +453,8 @@ const Budget = () => {
           {budgets.length > 0 && (
             <button
               onClick={() => setResetOpen(true)}
-              className="px-3 py-2 text-sm font-medium text-red-500
-                border border-red-100 rounded-lg hover:bg-red-50 transition"
+              className="px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400
+                border border-red-100 dark:border-red-900/30 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition"
             >
               Reset all
             </button>
@@ -491,10 +491,10 @@ const Budget = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 py-20 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 py-20 text-center transition-colors">
           <p className="text-4xl mb-3">💰</p>
-          <p className="text-sm font-medium text-gray-700">No budgets yet</p>
-          <p className="text-xs text-gray-400 mt-1 mb-5">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No budgets yet</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-5">
             Set spending limits for each category to stay on track
           </p>
           <button

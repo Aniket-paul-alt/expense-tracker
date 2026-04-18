@@ -42,7 +42,7 @@ const PAYMENT_METHODS = [
 
 const Field = ({ label, error, children }) => (
   <div>
-    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
       {label}
     </label>
     {children}
@@ -53,9 +53,9 @@ const Field = ({ label, error, children }) => (
 );
 
 const inputClass = (hasError) =>
-  `w-full px-3 py-2 text-sm border rounded-lg outline-none transition
-  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white
-  ${hasError ? "border-red-300" : "border-gray-200"}`;
+  `w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors
+  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+  ${hasError ? "border-red-300 dark:border-red-500/50" : "border-gray-200 dark:border-gray-700"}`;
 
 // ─── ExpenseForm ──────────────────────────────────────────────────────────────
 
@@ -175,8 +175,8 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
                 className={`flex flex-col items-center gap-1 p-2 rounded-lg border
                   cursor-pointer transition-all text-center
                   ${isSelected
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
               >
                 <input
@@ -187,7 +187,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
                 />
                 <span style={{ fontSize: "20px" }}>{cat.icon}</span>
                 <span className={`text-xs font-medium truncate w-full text-center
-                  ${isSelected ? "text-indigo-700" : "text-gray-600"}`}>
+                  ${isSelected ? "text-indigo-700 dark:text-indigo-400" : "text-gray-600 dark:text-gray-400"}`}>
                   {cat.label}
                 </span>
               </label>
@@ -251,7 +251,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
           className="w-4 h-4 accent-indigo-600 cursor-pointer"
         />
         <label htmlFor="isRecurring"
-          className="text-sm text-gray-600 cursor-pointer select-none">
+          className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
           This is a recurring expense
         </label>
       </div>
@@ -262,8 +262,8 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-2.5 px-4 border border-gray-200 text-gray-600
-              text-sm font-medium rounded-lg hover:bg-gray-50 transition"
+            className="flex-1 py-2.5 px-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300
+              text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
             Cancel
           </button>

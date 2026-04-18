@@ -38,14 +38,14 @@ const WeeklyView = ({ symbol }) => {
 
       {/* Week picker */}
       <div className="flex items-center gap-3">
-        <label className="text-sm text-gray-500">Week starting</label>
+        <label className="text-sm text-gray-500 dark:text-gray-400">Week starting</label>
         <input
           type="date"
           value={weekStart}
           max={getTodayISO()}
           onChange={(e) => setWeekStart(e.target.value)}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg
-            outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg
+            outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
         />
         {d && (
           <span className="text-xs text-gray-400">
@@ -129,13 +129,13 @@ const WeeklyView = ({ symbol }) => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-gray-700 capitalize">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize">
                             {pm.method}
                           </span>
-                          <span className="text-xs text-gray-400">{pm.count} txn</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{pm.count} txn</span>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold text-gray-900">
+                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(pm.total, symbol)}
                       </span>
                     </div>

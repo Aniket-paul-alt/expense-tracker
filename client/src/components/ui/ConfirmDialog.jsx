@@ -11,12 +11,12 @@ const ConfirmDialog = ({
   danger = true,
 }) => (
   <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-sm" center>
-    <p className="text-sm text-gray-500 mb-6">{message}</p>
+    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
     <div className="flex gap-3">
       <button
         onClick={onClose}
-        className="flex-1 py-2 px-4 border border-gray-200 text-gray-600
-          text-sm font-medium rounded-lg hover:bg-gray-50 transition"
+        className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300
+          text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
         Cancel
       </button>

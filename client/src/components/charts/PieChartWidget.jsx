@@ -9,12 +9,12 @@ const CustomTooltip = ({ active, payload, symbol }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-gray-800 capitalize mb-0.5">{d.category}</p>
-      <p className="text-gray-900 font-semibold">
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-sm px-3 py-2 text-xs">
+      <p className="font-medium text-gray-800 dark:text-gray-200 capitalize mb-0.5">{d.category}</p>
+      <p className="text-gray-900 dark:text-gray-100 font-semibold">
         {symbol}{Number(d.total).toLocaleString("en-IN")}
       </p>
-      <p className="text-gray-400">{d.percentage}%</p>
+      <p className="text-gray-400 dark:text-gray-500">{d.percentage}%</p>
     </div>
   );
 };
@@ -74,7 +74,7 @@ const PieChartWidget = ({
         {showLegend && (
           <Legend
             formatter={(value) => (
-              <span className="text-xs text-gray-600 capitalize">{value}</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">{value}</span>
             )}
             iconSize={8}
             iconType="circle"

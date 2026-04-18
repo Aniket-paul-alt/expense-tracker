@@ -27,14 +27,14 @@ const CategoryList = ({ data = [], symbol = "₹", limit = 8 }) => {
           {/* Bar + label */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-gray-700 capitalize truncate">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize truncate">
                 {cat.category}
               </span>
-              <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2 flex-shrink-0">
                 {cat.percentage}%
               </span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -47,10 +47,10 @@ const CategoryList = ({ data = [], symbol = "₹", limit = 8 }) => {
 
           {/* Amount */}
           <div className="text-right flex-shrink-0">
-            <p className="text-xs font-semibold text-gray-900">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">
               {formatCurrency(cat.total, symbol)}
             </p>
-            <p className="text-xs text-gray-400">{cat.count} txn</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{cat.count} txn</p>
           </div>
         </div>
       ))}

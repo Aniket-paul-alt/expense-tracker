@@ -1,9 +1,9 @@
 const Sk = ({ className = "" }) => (
-  <div className={`bg-gray-100 rounded-lg animate-pulse ${className}`} />
+  <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse ${className}`} />
 );
 
 export const StatCardSkeleton = () => (
-  <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+  <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 space-y-3 transition-colors">
     <Sk className="h-3 w-20" />
     <Sk className="h-6 w-28" />
     <Sk className="h-2 w-16" />

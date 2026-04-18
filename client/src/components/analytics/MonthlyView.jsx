@@ -41,12 +41,12 @@ const MonthlyView = ({ symbol }) => {
 
       {/* Month + Year pickers */}
       <div className="flex items-center gap-3 flex-wrap">
-        <label className="text-sm text-gray-500">Period</label>
+        <label className="text-sm text-gray-500 dark:text-gray-400">Period</label>
         <select
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg
-            outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg
+            outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
         >
           {MONTHS.map((m, i) => (
             <option key={m} value={i + 1}>{m}</option>
@@ -55,8 +55,8 @@ const MonthlyView = ({ symbol }) => {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg
-            outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg
+            outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
         >
           {years.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -164,16 +164,16 @@ const MonthlyView = ({ symbol }) => {
                 colors={["#e5e7eb", "#6366f1"]}
               />
               {/* Text summary */}
-              <div className="flex gap-4 pt-1 border-t border-gray-50">
+              <div className="flex gap-4 pt-1 border-t border-gray-50 dark:border-gray-800">
                 <div>
-                  <p className="text-xs text-gray-400">Last month</p>
-                  <p className="text-sm font-semibold text-gray-700">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Last month</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     {formatCurrency(d?.comparison?.previousTotal || 0, symbol)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">This month</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">This month</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {formatCurrency(d?.comparison?.currentTotal || 0, symbol)}
                   </p>
                 </div>
@@ -198,18 +198,18 @@ const MonthlyView = ({ symbol }) => {
               ? <div className="space-y-3">
                   {d.topExpenses.map((exp, i) => (
                     <div key={exp._id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                      <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center
-                        justify-center text-xs font-semibold text-gray-400">
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center
+                        justify-center text-xs font-semibold text-gray-400 dark:text-gray-500">
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-800 capitalize truncate">
+                        <p className="text-xs font-medium text-gray-800 dark:text-gray-200 capitalize truncate">
                           {exp.note || exp.category}
                         </p>
-                        <p className="text-xs text-gray-400 capitalize">{exp.category}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{exp.category}</p>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(exp.amount, symbol)}
                       </p>
                     </div>

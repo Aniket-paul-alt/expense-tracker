@@ -16,7 +16,7 @@ const AppLayout = () => {
   }, [token, dispatch]);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden transition-colors duration-200">
 
       {/* Sidebar — hidden on mobile, visible on md+ */}
       <aside className="hidden md:flex md:w-60 lg:w-64 flex-shrink-0">

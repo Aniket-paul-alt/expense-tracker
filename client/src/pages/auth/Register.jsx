@@ -47,26 +47,26 @@ const Register = () => {
   };
 
   const inputClass = (hasError) =>
-    `w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition
-    focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-    ${hasError ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50"}`;
+    `w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition-colors
+    focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100
+    ${hasError ? "border-red-400 dark:border-red-500/50 bg-red-50 dark:bg-red-900/10" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4 transition-colors">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 transition-colors">
 
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="text-3xl mb-2">💰</div>
-          <h1 className="text-2xl font-semibold text-gray-900">Create account</h1>
-          <p className="text-gray-500 text-sm mt-1">Start tracking your expenses</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Create account</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Start tracking your expenses</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Full name
             </label>
             <input
@@ -82,7 +82,7 @@ const Register = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -98,7 +98,7 @@ const Register = () => {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Password
             </label>
             <input
@@ -114,7 +114,7 @@ const Register = () => {
 
           {/* Confirm password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Confirm password
             </label>
             <input
@@ -140,9 +140,9 @@ const Register = () => {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+          <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
             Sign in
           </Link>
         </p>
