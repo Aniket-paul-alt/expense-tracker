@@ -136,17 +136,19 @@ const authSlice = createSlice({
 
     // ── Fetch me ──
     builder
+      .addCase(fetchMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.user = action.payload.user;
         localStorage.setItem("user", JSON.stringify(action.payload.user));
       })
-      .addCase(fetchMe.rejected, (state) => {
-        // token is stale — clear everything
-        state.user = null;
-        state.token = null;
-        state.isLoggedIn = false;
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      .addCase(fetchMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        // NOTE: We no longer clear token/user here. 
+        // 401 Unauthorized errors are handled globally by the axios interceptor.
       });
 
     // ── Update profile ──
