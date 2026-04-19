@@ -93,6 +93,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
 
       // Show budget alert if triggered
       if (res.budgetAlert) {
@@ -116,6 +117,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
       toast.success("Expense updated!");
       onSuccess?.();
     },

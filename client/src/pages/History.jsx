@@ -121,6 +121,7 @@ const History = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
       toast.success("Expense deleted");
       setDeleteTarget(null);
     },
