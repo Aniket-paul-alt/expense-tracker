@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import { store } from "./app/store";
 import AppRoutes from "./routes/AppRoutes";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -25,7 +26,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ThemeProvider>
-            <AppRoutes />
+            <NotificationProvider>
+              <AppRoutes />
+            </NotificationProvider>
           </ThemeProvider>
           <Toaster
             position="top-right"

@@ -187,6 +187,18 @@ const createExpense = async (req, res) => {
       expense.date
     );
 
+    // ── Fire push notification for budget alert (non-blocking) ────────────────
+    if (budgetAlert && req.user.preferences?.budgetAlerts !== false) {
+      const { sendPushToUser } = require("../utils/sendPush");
+      const emoji = budgetAlert.type === "exceeded" ? "🚨" : "⚠️";
+      sendPushToUser(req.user._id, {
+        title: `${emoji} Budget ${budgetAlert.type === "exceeded" ? "Exceeded" : "Warning"}`,
+        body:  budgetAlert.message,
+        tag:   `budget-${budgetAlert.category}`,
+        url:   "/budget",
+      }).catch(() => {}); // fire-and-forget, never block the response
+    }
+
     return res.status(201).json({
       success: true,
       message: "Expense added successfully.",

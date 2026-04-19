@@ -55,6 +55,15 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
+      // Granular notification toggles
+      dailyReminder: {
+        type: Boolean,
+        default: true,  // opted-in by default once permission is granted
+      },
+      budgetAlerts: {
+        type: Boolean,
+        default: true,
+      },
     },
     isVerified: {
       type: Boolean,

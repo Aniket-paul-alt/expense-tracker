@@ -10,6 +10,7 @@ import { updateProfile, changePassword, logout } from "../features/auth/authSlic
 import authService from "../services/authServices";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { useTheme } from "../contexts/ThemeContext";
+import { useNotifications } from "../contexts/NotificationContext";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -417,6 +418,180 @@ const DangerZoneSection = () => {
   );
 };
 
+// ─── Notifications Section ───────────────────────────────────────────────────
+
+const NotificationsSection = () => {
+  const { isAuthenticated, user } = useSelector((s) => s.auth);
+  const dispatch = useDispatch();
+  const {
+    permission, isSubscribed, isLoading, error, subscribe, unsubscribe, isSupported,
+  } = useNotifications();
+
+  const [dailyReminder, setDailyReminder] = useState(
+    user?.preferences?.dailyReminder !== false
+  );
+  const [budgetAlerts, setBudgetAlerts] = useState(
+    user?.preferences?.budgetAlerts !== false
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleSubscribe = async () => {
+    const ok = await subscribe();
+    if (ok) toast.success("Notifications enabled! 🔔");
+    else if (error) toast.error(error);
+  };
+
+  const handleUnsubscribe = async () => {
+    const ok = await unsubscribe();
+    if (ok) toast.success("Notifications disabled.");
+  };
+
+  const savePrefs = async (field, value) => {
+    setSaving(true);
+    try {
+      await dispatch(updateProfile({
+        preferences: { ...user?.preferences, [field]: value },
+      })).unwrap();
+      toast.success("Preferences saved!");
+    } catch {
+      toast.error("Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const PermissionBadge = () => {
+    const map = {
+      granted:     { color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-green-900/20",  label: "Allowed",   dot: "bg-green-500" },
+      denied:      { color: "text-red-600 dark:text-red-400",    bg: "bg-red-50 dark:bg-red-900/20",    label: "Blocked",   dot: "bg-red-500"   },
+      default:     { color: "text-gray-600 dark:text-gray-400",   bg: "bg-gray-50 dark:bg-gray-800",    label: "Not asked", dot: "bg-gray-400"  },
+      unsupported: { color: "text-gray-500 dark:text-gray-500",   bg: "bg-gray-50 dark:bg-gray-800",    label: "Not supported", dot: "bg-gray-400" },
+    };
+    const s = map[permission] || map.default;
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${s.bg} ${s.color}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+        {s.label}
+      </span>
+    );
+  };
+
+  const Toggle = ({ checked, onChange, disabled }) => (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1
+        disabled:opacity-40 disabled:cursor-not-allowed
+        ${checked ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-700"}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform
+          ${checked ? "translate-x-6" : "translate-x-1"}`}
+      />
+    </button>
+  );
+
+  if (!isSupported) {
+    return (
+      <Section title="Notifications" subtitle="Control push notification preferences">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Push notifications are not supported in this browser. Try Chrome or Edge.
+        </p>
+      </Section>
+    );
+  }
+
+  return (
+    <Section title="Notifications" subtitle="Get alerts even when the app is closed">
+      <div className="space-y-4">
+
+        {/* Permission status row */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Browser permission</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Required to receive any notifications</p>
+          </div>
+          <PermissionBadge />
+        </div>
+
+        {/* Enable / Disable button */}
+        {!isSubscribed ? (
+          <button
+            onClick={handleSubscribe}
+            disabled={isLoading || permission === "denied"}
+            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700
+              disabled:bg-indigo-300 dark:disabled:bg-indigo-900/40
+              disabled:text-indigo-200 text-white text-sm font-medium rounded-lg transition"
+          >
+            {isLoading ? "Enabling..." : permission === "denied" ? "Blocked in browser settings" : "🔔 Enable Notifications"}
+          </button>
+        ) : (
+          <button
+            onClick={handleUnsubscribe}
+            disabled={isLoading}
+            className="w-full py-2.5 border border-gray-200 dark:border-gray-700
+              text-gray-600 dark:text-gray-300 text-sm font-medium rounded-lg
+              hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+          >
+            {isLoading ? "Disabling..." : "🔕 Disable Notifications"}
+          </button>
+        )}
+
+        {/* Granular toggles — only shown when subscribed */}
+        {isSubscribed && (
+          <div className="space-y-3 border-t border-gray-100 dark:border-gray-800/50 pt-3">
+
+            {/* Daily reminder */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">⏰ Daily reminder (8 PM)</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  Reminds you to log expenses if you haven't today
+                </p>
+              </div>
+              <Toggle
+                checked={dailyReminder}
+                disabled={saving}
+                onChange={(v) => { setDailyReminder(v); savePrefs("dailyReminder", v); }}
+              />
+            </div>
+
+            {/* Budget alerts */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">🚨 Budget alerts</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  Alerts when you reach 80% or exceed a budget
+                </p>
+              </div>
+              <Toggle
+                checked={budgetAlerts}
+                disabled={saving}
+                onChange={(v) => { setBudgetAlerts(v); savePrefs("budgetAlerts", v); }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Denied state help */}
+        {permission === "denied" && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-100
+            dark:border-amber-900/30 px-3 py-2.5">
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Notifications are blocked. To enable: open your browser settings → Site settings
+              → Notifications → find this site and set to &quot;Allow&quot;.
+            </p>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+};
+
 // ─── Theme Info Section ─────────────────────────────────────────────────────
 
 const ThemeSection = () => {
@@ -464,6 +639,7 @@ const Settings = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <ThemeSection />
+      <NotificationsSection />
       <ProfileSection />
       <PasswordSection />
       <AccountInfoSection />

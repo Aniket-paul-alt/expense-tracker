@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Category = require("../models/category.model");
 const Expense = require("../models/expense.model");
+const PushSubscription = require("../models/pushSubscription.model");
 
 // ─── Helper: Generate JWT ─────────────────────────────────────────────────────
 
@@ -269,7 +270,7 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    // Delete user and all their expenses
+    // Delete user, all their expenses, categories, and push subscriptions
     const tasks = [User.findByIdAndDelete(req.user._id)];
     
     if (Expense && typeof Expense.deleteMany === 'function') {
@@ -278,6 +279,7 @@ const deleteAccount = async (req, res) => {
     if (Category && typeof Category.deleteMany === 'function') {
       tasks.push(Category.deleteMany({ userId: req.user._id }));
     }
+    tasks.push(PushSubscription.deleteMany({ userId: req.user._id }));
 
     await Promise.all(tasks);
 
