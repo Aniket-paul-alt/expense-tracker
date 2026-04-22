@@ -90,7 +90,7 @@ const getExpenses = async (req, res) => {
     // Run query and count in parallel
     const [expenses, totalCount] = await Promise.all([
       Expense.find(filter)
-        .sort({ [sortField]: sortOrder })
+        .sort({ [sortField]: sortOrder, createdAt: sortOrder }) // secondary: creation time as tiebreaker
         .skip(skip)
         .limit(parseInt(limit))
         .lean(), // lean() returns plain JS objects — faster than Mongoose docs
@@ -478,7 +478,8 @@ const checkBudgetAlert = async (user, category, expenseDate) => {
     const { total } = await Expense.getTotalInRange(
       user._id,
       startDate,
-      new Date()
+      new Date(),
+      category  // ← filter by category so only that category's spend is measured
     );
 
     const percentage = Math.round((total / budget.amount) * 100);

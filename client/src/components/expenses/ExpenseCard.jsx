@@ -1,6 +1,6 @@
 import { getCategoryColor, getCategoryIcon } from "../../utils/categoryColors";
 import { formatCurrency } from "../../utils/formatCurrency";
-import { formatDate } from "../../utils/dateHelpers";
+import { formatDate, formatTime } from "../../utils/dateHelpers";
 
 const PAYMENT_LABELS = {
   upi: "UPI", card: "Card", cash: "Cash",
@@ -42,6 +42,18 @@ const ExpenseCard = ({ expense, onEdit, onDelete }) => {
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {formatDate(expense.date, "dd MMM yyyy")}
           </span>
+          {expense.createdAt && (
+            <>
+              <span className="text-gray-200 dark:text-gray-700">·</span>
+              <span className="inline-flex items-center gap-0.5 text-xs text-gray-400 dark:text-gray-500">
+                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" className="flex-shrink-0">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {formatTime(expense.createdAt)}
+              </span>
+            </>
+          )}
           <span className="text-gray-200 dark:text-gray-700">·</span>
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {PAYMENT_LABELS[expense.paymentMethod] || expense.paymentMethod}
@@ -68,8 +80,8 @@ const ExpenseCard = ({ expense, onEdit, onDelete }) => {
           {formatCurrency(expense.amount)}
         </p>
 
-        {/* Action buttons — visible on hover */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Action buttons — always visible on mobile, hover-reveal on desktop */}
+        <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(expense)}
             className="w-7 h-7 flex items-center justify-center rounded-lg

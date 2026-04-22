@@ -71,14 +71,20 @@ expenseSchema.virtual("formattedAmount").get(function () {
 });
 
 // Static method: get total for a user in a date range
-expenseSchema.statics.getTotalInRange = async function (userId, startDate, endDate) {
+// Pass an optional `category` string to restrict the sum to that category only
+expenseSchema.statics.getTotalInRange = async function (userId, startDate, endDate, category) {
+  const matchStage = {
+    userId: new mongoose.Types.ObjectId(userId),
+    date: { $gte: startDate, $lte: endDate },
+  };
+
+  // If a category is provided, only sum expenses in that category
+  if (category) {
+    matchStage.category = category.toLowerCase().trim();
+  }
+
   const result = await this.aggregate([
-    {
-      $match: {
-        userId: new mongoose.Types.ObjectId(userId),
-        date: { $gte: startDate, $lte: endDate },
-      },
-    },
+    { $match: matchStage },
     {
       $group: {
         _id: null,
