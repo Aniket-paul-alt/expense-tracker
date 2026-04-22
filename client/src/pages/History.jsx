@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { isToday, isYesterday, format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
@@ -9,6 +10,57 @@ import ExpenseCard  from "../components/expenses/ExpenseCard";
 import ExpenseForm  from "../components/expenses/ExpenseForm";
 import Modal        from "../components/ui/Modal";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// Groups expenses by their calendar date (YYYY-MM-DD key, ordered newest first)
+const groupExpensesByDate = (expenses) => {
+  const groups = {};
+  expenses.forEach((e) => {
+    const key = format(new Date(e.date), "yyyy-MM-dd");
+    if (!groups[key]) groups[key] = { key, date: new Date(e.date), items: [] };
+    groups[key].items.push(e);
+  });
+  // Return pre-sorted (backend already sorts desc, so insertion order is correct)
+  return Object.values(groups);
+};
+
+const getDateLabel = (date) => {
+  if (isToday(date))     return "Today";
+  if (isYesterday(date)) return "Yesterday";
+  return format(date, "EEEE, dd MMM yyyy"); // e.g. "Monday, 20 Apr 2025"
+};
+
+// ─── Date Section Header ─────────────────────────────────────────────────────
+
+const DateHeader = ({ date, items }) => {
+  const total = items.reduce((sum, e) => sum + e.amount, 0);
+  const label = getDateLabel(date);
+  const isSpecial = isToday(date) || isYesterday(date);
+
+  return (
+    <div className="flex items-center justify-between px-4 py-2
+      bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800/60">
+      <div className="flex items-center gap-2">
+        {isSpecial && (
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            isToday(date) ? "bg-indigo-500" : "bg-amber-400"
+          }`}/>
+        )}
+        <span className={`text-xs font-semibold tracking-wide ${
+          isSpecial
+            ? "text-gray-700 dark:text-gray-300"
+            : "text-gray-400 dark:text-gray-500 uppercase"
+        }`}>
+          {label}
+        </span>
+      </div>
+      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+        ₹{total.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+      </span>
+    </div>
+  );
+};
 
 // ─── Skeleton row ──────────────────────────────────────────────────────────────
 
@@ -112,8 +164,9 @@ const History = () => {
     keepPreviousData: true,
   });
 
-  const expenses   = data?.data || [];
-  const pagination = data?.pagination;
+  const expenses      = data?.data || [];
+  const pagination    = data?.pagination;
+  const groupedByDate = useMemo(() => groupExpensesByDate(expenses), [expenses]);
 
   // ── Delete mutation ──
   const deleteMutation = useMutation({
@@ -228,18 +281,27 @@ const History = () => {
           )}
         </div>
 
-        {/* Items */}
-        <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
+        {/* Items — grouped by date */}
+        <div>
           {isLoading ? (
-            Array(8).fill(0).map((_, i) => <RowSkeleton key={i}/>)
+            <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
+              {Array(8).fill(0).map((_, i) => <RowSkeleton key={i}/>)}
+            </div>
           ) : expenses.length ? (
-            expenses.map((expense) => (
-              <ExpenseCard
-                key={expense._id}
-                expense={expense}
-                onEdit={(e) => setEditExpense(e)}
-                onDelete={(e) => setDeleteTarget(e)}
-              />
+            groupedByDate.map((group) => (
+              <div key={group.key}>
+                <DateHeader date={group.date} items={group.items} />
+                <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                  {group.items.map((expense) => (
+                    <ExpenseCard
+                      key={expense._id}
+                      expense={expense}
+                      onEdit={(e) => setEditExpense(e)}
+                      onDelete={(e) => setDeleteTarget(e)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))
           ) : (
             <div className="py-16 text-center">
