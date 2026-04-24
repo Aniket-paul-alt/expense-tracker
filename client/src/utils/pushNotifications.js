@@ -1,24 +1,13 @@
 import axiosBase from "../services/axiosBase";
+import { getFCMToken } from "../services/firebase";
 
 // ─── Convert VAPID key from base64url to Uint8Array ───────────────────────────
-// Required by PushManager.subscribe()
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64  = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-};
-
-// ─── Fetch VAPID public key from the server ───────────────────────────────────
-
-export const getVapidPublicKey = async () => {
-  // Use the env variable if available (faster, works offline after first load)
-  if (import.meta.env.VITE_VAPID_PUBLIC_KEY) {
-    return import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  }
-  const res = await axiosBase.get("/api/push/vapid-key");
-  return res.data.publicKey;
 };
 
 // ─── Get current notification permission ─────────────────────────────────────
@@ -36,44 +25,81 @@ export const requestPermission = async () => {
   return await Notification.requestPermission();
 };
 
-// ─── Subscribe to Web Push ────────────────────────────────────────────────────
-// Calls PushManager.subscribe() then saves the subscription object to the server.
+// ─── Subscribe to Push ────────────────────────────────────────────────────────
+// Strategy:
+//   1. Try FCM getToken() — preferred (guaranteed Android delivery)
+//   2. Fall back to VAPID PushManager.subscribe() if FCM fails
 
 export const subscribeToPush = async () => {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported in this browser.");
   }
 
-  const registration = await navigator.serviceWorker.ready;
-  const vapidKey     = await getVapidPublicKey();
+  await navigator.serviceWorker.ready;
 
-  // Create (or retrieve existing) push subscription
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidKey),
+  let fcmToken = null;
+  let vapidSubscription = null;
+
+  // ── Step 1: Try FCM ──────────────────────────────────────────────────────
+  try {
+    fcmToken = await getFCMToken();
+    if (fcmToken) {
+      console.log("[Push] FCM token obtained ✅");
+    }
+  } catch (fcmErr) {
+    console.warn("[Push] FCM getToken failed, will fall back to VAPID:", fcmErr.message);
+  }
+
+  // ── Step 2: Also get VAPID subscription (belt-and-suspenders) ────────────
+  // We keep the VAPID subscription as a fallback for non-Chrome browsers.
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+    if (vapidKey) {
+      vapidSubscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+      console.log("[Push] VAPID subscription obtained ✅");
+    }
+  } catch (vapidErr) {
+    // VAPID failure is non-fatal if we already have an FCM token
+    if (!fcmToken) throw vapidErr;
+    console.warn("[Push] VAPID subscribe failed (FCM will handle):", vapidErr.message);
+  }
+
+  if (!fcmToken && !vapidSubscription) {
+    throw new Error("Failed to obtain any push subscription.");
+  }
+
+  // ── Step 3: Save to server ───────────────────────────────────────────────
+  await axiosBase.post("/api/push/subscribe", {
+    fcmToken:     fcmToken     || undefined,
+    subscription: vapidSubscription ? vapidSubscription.toJSON() : undefined,
   });
 
-  // Store subscription on the server
-  await axiosBase.post("/api/push/subscribe", { subscription });
-
-  return subscription;
+  return { fcmToken, vapidSubscription };
 };
 
-// ─── Unsubscribe from Web Push ────────────────────────────────────────────────
+// ─── Unsubscribe from Push ────────────────────────────────────────────────────
 
 export const unsubscribeFromPush = async () => {
   if (!("serviceWorker" in navigator)) return;
 
-  const registration   = await navigator.serviceWorker.ready;
-  const subscription   = await registration.pushManager.getSubscription();
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
 
-  if (!subscription) return;
+  let endpoint = null;
+  if (subscription) {
+    endpoint = subscription.endpoint;
+    await subscription.unsubscribe();
+  }
 
-  const endpoint = subscription.endpoint;
-  await subscription.unsubscribe();
-
-  // Tell the server to remove the subscription
-  await axiosBase.delete("/api/push/unsubscribe", { data: { endpoint } });
+  // Tell the server to remove all subscriptions (FCM + VAPID) for this user
+  await axiosBase.delete("/api/push/unsubscribe", {
+    data: { endpoint: endpoint || undefined },
+  });
 };
 
 // ─── Check if currently subscribed ───────────────────────────────────────────
@@ -84,3 +110,4 @@ export const getIsSubscribed = async () => {
   const subscription = await registration.pushManager.getSubscription();
   return !!subscription;
 };
+

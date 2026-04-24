@@ -8,9 +8,41 @@ import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// ─── Push Event ───────────────────────────────────────────────────────────────
-// Fires when the server sends a push message via Web Push Protocol.
-// Works even when the app is closed / in the background.
+// ─── Firebase Messaging (Background) ─────────────────────────────────────────
+// FCM requires the compat SDK loaded via importScripts in a service worker.
+// These CDN scripts are cached by the browser after the first load.
+
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+// self.__FIREBASE_CONFIG is injected at build time via vite.config.js define.
+// Falls back to a placeholder so the SW doesn't crash when config is missing.
+const firebaseConfig = self.__FIREBASE_CONFIG || {};
+
+if (firebaseConfig.projectId) {
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
+
+  // ── Background / killed-app messages from FCM ──────────────────────────────
+  // FCM calls this when a data-only message arrives and the app is not focused.
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[SW] FCM background message:', payload);
+
+    const { title, body, icon, badge, tag, url } = payload.data || payload.notification || {};
+
+    self.registration.showNotification(title || 'Expense Tracker', {
+      body:      body  || '',
+      icon:      icon  || '/icons/pwa-192x192.png',
+      badge:     badge || '/icons/pwa-192x192.png',
+      tag:       tag   || 'expense-tracker',
+      renotify:  true,
+      data:      { url: url || '/' },
+    });
+  });
+}
+
+// ─── VAPID Push Event (fallback for non-FCM browsers) ────────────────────────
+// Fires when the server sends a push message via the legacy Web Push Protocol.
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -21,6 +53,10 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'Expense Tracker', body: event.data.text() };
   }
+
+  // Skip if this looks like an FCM message (FCM handles it via onBackgroundMessage)
+  // FCM push events arrive with an empty data string or as notification-only
+  if (payload?.from || payload?.['google.c.fid']) return;
 
   const {
     title = 'Expense Tracker',
@@ -36,15 +72,14 @@ self.addEventListener('push', (event) => {
       body,
       icon,
       badge,
-      tag,                  // replaces previous notification with same tag
-      renotify: true,       // vibrate even if replacing
+      tag,
+      renotify: true,
       data: { url },
     })
   );
 });
 
 // ─── Notification Click ───────────────────────────────────────────────────────
-// When user taps a notification — open or focus the app window.
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
@@ -55,7 +90,6 @@ self.addEventListener('notificationclick', (event) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // If app is already open, focus it and navigate
         for (const client of windowClients) {
           if ('focus' in client) {
             client.focus();
@@ -63,7 +97,6 @@ self.addEventListener('notificationclick', (event) => {
             return;
           }
         }
-        // Otherwise open a new window
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
         }
@@ -71,8 +104,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// ─── Push Subscription Change ──────────────────────────────────────────────────
-// Browser auto-renews subscriptions; we need to send the new one to the server.
+// ─── Push Subscription Change ─────────────────────────────────────────────────
 
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
@@ -82,7 +114,6 @@ self.addEventListener('pushsubscriptionchange', (event) => {
         applicationServerKey: event.oldSubscription?.options?.applicationServerKey,
       })
       .then(async (subscription) => {
-        // Notify the app page to re-register the new subscription with the server
         const allClients = await clients.matchAll({ includeUncontrolled: true });
         for (const client of allClients) {
           client.postMessage({ type: 'PUSH_SUBSCRIPTION_RENEWED', subscription });

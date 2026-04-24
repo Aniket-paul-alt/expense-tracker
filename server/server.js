@@ -15,7 +15,7 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// ─── Configure VAPID for Web Push ────────────────────────────────────────────
+// ─── Configure VAPID for Web Push (legacy fallback) ───────────────────────────
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || 'mailto:admin@expense-tracker.app',
@@ -24,8 +24,13 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
   console.log('[Push] VAPID configured ✅');
 } else {
-  console.warn('[Push] VAPID keys not set — push notifications will not work');
+  console.warn('[Push] VAPID keys not set — web-push fallback will not work');
 }
+
+// ─── Initialise Firebase Admin (FCM) ─────────────────────────────────────────
+const { initAdmin } = require('./utils/fcmSend');
+initAdmin(); // runs once; logs warning if env vars are absent
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');

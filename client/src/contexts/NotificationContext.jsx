@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
 import {
   getNotificationPermission,
   requestPermission,
@@ -7,6 +8,7 @@ import {
   unsubscribeFromPush,
   getIsSubscribed,
 } from "../utils/pushNotifications";
+import { onForegroundMessage } from "../services/firebase";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
@@ -36,10 +38,9 @@ export const NotificationProvider = ({ children }) => {
       .then(setIsSubscribed)
       .catch(() => setIsSubscribed(false));
 
-    // Listen for SW message when subscription is auto-renewed
+    // Listen for SW message when VAPID subscription is auto-renewed
     const handleSWMessage = (event) => {
       if (event.data?.type === "PUSH_SUBSCRIPTION_RENEWED") {
-        // Re-register with server (utils handles this via subscribeToPush)
         subscribeToPush()
           .then(() => setIsSubscribed(true))
           .catch(console.error);
@@ -50,12 +51,33 @@ export const NotificationProvider = ({ children }) => {
     return () => navigator.serviceWorker?.removeEventListener("message", handleSWMessage);
   }, [isAuthenticated]);
 
+  // ── FCM Foreground Message Handler ───────────────────────────────────────
+  // When the app is open (foreground), FCM does NOT show a system notification.
+  // We catch the message here and show a toast instead so the user still sees it.
+  useEffect(() => {
+    if (!isAuthenticated || permission !== "granted") return;
+
+    let unsubscribeFn;
+    onForegroundMessage((payload) => {
+      const data = payload.data || payload.notification || {};
+      const title = data.title || "Expense Tracker";
+      const body  = data.body  || "";
+      toast(`🔔 ${title}${body ? `: ${body}` : ""}`, {
+        duration: 6000,
+        style: { maxWidth: "340px" },
+      });
+    })
+      .then((unsub) => { unsubscribeFn = unsub; })
+      .catch(() => {}); // non-fatal if firebase isn't configured yet
+
+    return () => { if (typeof unsubscribeFn === "function") unsubscribeFn(); };
+  }, [isAuthenticated, permission]);
+
   // ── Request permission + subscribe ────────────────────────────────────────
   const subscribe = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Request browser permission
       const perm = await requestPermission();
       setPermission(perm);
 
@@ -67,7 +89,6 @@ export const NotificationProvider = ({ children }) => {
         return false;
       }
 
-      // 2. Subscribe to push
       await subscribeToPush();
       setIsSubscribed(true);
       return true;
@@ -111,3 +132,4 @@ export const NotificationProvider = ({ children }) => {
     </NotificationContext.Provider>
   );
 };
+

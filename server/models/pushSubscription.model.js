@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 
 // ─── Push Subscription Model ──────────────────────────────────────────────────
-// Stores Web Push API subscriptions per user device.
-// A single user can have multiple subscriptions (e.g. phone + tablet).
+// Supports two delivery modes per device:
+//   1. fcmToken   — Firebase Cloud Messaging (preferred, guaranteed Android delivery)
+//   2. subscription — VAPID Web Push (legacy fallback for browsers without FCM)
+// A user can have multiple documents (one per device).
 
 const pushSubscriptionSchema = new mongoose.Schema(
   {
@@ -12,12 +14,23 @@ const pushSubscriptionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // The full PushSubscription object from the browser
+
+    // ── FCM token (preferred) ────────────────────────────────────────────────
+    // Set when the browser registers with Firebase Cloud Messaging.
+    fcmToken: {
+      type: String,
+      default: null,
+      sparse: true, // allows multiple null values (unique only when non-null)
+      unique: true,
+    },
+
+    // ── Legacy VAPID Web Push subscription object ────────────────────────────
+    // Kept for backwards-compatibility; used only when fcmToken is absent.
     subscription: {
-      endpoint: { type: String, required: true, unique: true },
+      endpoint: { type: String, sparse: true, unique: true },
       keys: {
-        p256dh: { type: String, required: true },
-        auth:   { type: String, required: true },
+        p256dh: { type: String },
+        auth:   { type: String },
       },
     },
   },
