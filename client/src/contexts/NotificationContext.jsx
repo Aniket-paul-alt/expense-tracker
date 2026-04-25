@@ -62,10 +62,29 @@ export const NotificationProvider = ({ children }) => {
       const data = payload.data || payload.notification || {};
       const title = data.title || "Expense Tracker";
       const body  = data.body  || "";
+      const icon  = data.icon  || "/icons/pwa-192x192.png";
+      const url   = data.url   || "/";
+
+      // Show in-app toast
       toast(`🔔 ${title}${body ? `: ${body}` : ""}`, {
         duration: 6000,
         style: { maxWidth: "340px" },
       });
+
+      // ALSO trigger a real system notification via the Service Worker
+      // so it appears in the Android notification tray even when the app is open
+      if ("serviceWorker" in navigator && Notification.permission === "granted") {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification(title, {
+            body,
+            icon,
+            badge: "/icons/pwa-192x192.png",
+            tag: data.tag || "expense-tracker",
+            renotify: true,
+            data: { url },
+          });
+        });
+      }
     })
       .then((unsub) => { unsubscribeFn = unsub; })
       .catch(() => {}); // non-fatal if firebase isn't configured yet
