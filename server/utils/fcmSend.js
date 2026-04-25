@@ -41,36 +41,30 @@ const initAdmin = () => {
 const sendFCMToToken = async (fcmToken, { title, body, icon, badge, tag, url }) => {
   if (!initAdmin()) return;
 
+  // ── IMPORTANT: Use data-only message (no top-level .notification field) ────
+  // If .notification is set at the top level, FCM auto-displays the notification
+  // on Android and does NOT call onBackgroundMessage in the service worker,
+  // meaning our custom notification UI is bypassed. Data-only puts us in control.
   const message = {
     token: fcmToken,
-    notification: {
-      title,
-      body,
-    },
-    webpush: {
-      notification: {
-        title,
-        body,
-        icon:  icon  || "/icons/pwa-192x192.png",
-        badge: badge || "/icons/pwa-192x192.png",
-        tag:   tag   || "expense-tracker",
-        renotify: true,
-        // Makes the notification clickable and opens the PWA
-        click_action: url || "/",
-      },
-      fcmOptions: {
-        link: url || "/",
-      },
+    // Put all payload in .data so the service worker's onBackgroundMessage fires
+    data: {
+      title: title || 'Expense Tracker',
+      body:  body  || '',
+      icon:  icon  || '/icons/pwa-192x192.png',
+      badge: badge || '/icons/pwa-192x192.png',
+      tag:   tag   || 'expense-tracker',
+      url:   url   || '/',
     },
     android: {
-      priority: "high",
-      notification: {
-        title,
-        body,
-        icon:  "ic_notification",
-        color: "#6366f1",
-        tag:   tag || "expense-tracker",
-        clickAction: url || "/",
+      priority: 'high',       // wake up the device
+    },
+    webpush: {
+      headers: {
+        Urgency: 'high',      // high-priority for Chrome on Android
+      },
+      fcmOptions: {
+        link: url || '/',
       },
     },
   };

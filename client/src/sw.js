@@ -3,46 +3,53 @@
 // self.__WB_MANIFEST is replaced with the precache manifest by Workbox.
 
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
 // Precache all assets built by Vite
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // ─── Firebase Messaging (Background) ─────────────────────────────────────────
-// FCM requires the compat SDK loaded via importScripts in a service worker.
-// These CDN scripts are cached by the browser after the first load.
+// self.__FIREBASE_CONFIG is injected at build time by vite.config.js define.
+// When the PWA is backgrounded or killed, FCM delivers messages here via
+// onBackgroundMessage — this is the key to reliable Android notifications.
 
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
-
-// self.__FIREBASE_CONFIG is injected at build time via vite.config.js define.
-// Falls back to a placeholder so the SW doesn't crash when config is missing.
 const firebaseConfig = self.__FIREBASE_CONFIG || {};
 
 if (firebaseConfig.projectId) {
-  firebase.initializeApp(firebaseConfig);
-  const messaging = firebase.messaging();
+  const app       = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
 
-  // ── Background / killed-app messages from FCM ──────────────────────────────
-  // FCM calls this when a data-only message arrives and the app is not focused.
-  messaging.onBackgroundMessage((payload) => {
-    console.log('[SW] FCM background message:', payload);
+  onBackgroundMessage(messaging, (payload) => {
+    console.log('[SW] FCM background message received:', payload);
 
-    const { title, body, icon, badge, tag, url } = payload.data || payload.notification || {};
+    // FCM payload may carry data in .notification or .data depending on how
+    // the server sent it. We check both so neither is missed.
+    const n = payload.notification || {};
+    const d = payload.data         || {};
 
-    self.registration.showNotification(title || 'Expense Tracker', {
-      body:      body  || '',
-      icon:      icon  || '/icons/pwa-192x192.png',
-      badge:     badge || '/icons/pwa-192x192.png',
-      tag:       tag   || 'expense-tracker',
-      renotify:  true,
-      data:      { url: url || '/' },
+    const title = n.title || d.title || 'Expense Tracker';
+    const body  = n.body  || d.body  || '';
+    const icon  = n.icon  || d.icon  || '/icons/pwa-192x192.png';
+    const badge = d.badge || '/icons/pwa-192x192.png';
+    const tag   = d.tag   || 'expense-tracker';
+    const url   = d.url   || payload.fcmOptions?.link || '/';
+
+    return self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      tag,
+      renotify: true,
+      data: { url },
     });
   });
 }
 
-// ─── VAPID Push Event (fallback for non-FCM browsers) ────────────────────────
-// Fires when the server sends a push message via the legacy Web Push Protocol.
+// ─── VAPID Push Event (legacy fallback) ───────────────────────────────────────
+// Handles push events sent via the old VAPID / web-push path.
+// FCM messages go through onBackgroundMessage above, not here.
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -53,10 +60,6 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'Expense Tracker', body: event.data.text() };
   }
-
-  // Skip if this looks like an FCM message (FCM handles it via onBackgroundMessage)
-  // FCM push events arrive with an empty data string or as notification-only
-  if (payload?.from || payload?.['google.c.fid']) return;
 
   const {
     title = 'Expense Tracker',
