@@ -74,7 +74,7 @@ export const subscribeToPush = async () => {
   }
 
   // ── Step 3: Save to server ───────────────────────────────────────────────
-  await axiosBase.post("/api/push/subscribe", {
+  await axiosBase.post("/push/subscribe", {
     fcmToken:     fcmToken     || undefined,
     subscription: vapidSubscription ? vapidSubscription.toJSON() : undefined,
   });
@@ -97,7 +97,7 @@ export const unsubscribeFromPush = async () => {
   }
 
   // Tell the server to remove all subscriptions (FCM + VAPID) for this user
-  await axiosBase.delete("/api/push/unsubscribe", {
+  await axiosBase.delete("/push/unsubscribe", {
     data: { endpoint: endpoint || undefined },
   });
 };

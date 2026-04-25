@@ -26,7 +26,7 @@ const getFirebaseConfig = async () => {
   }
 
   // Otherwise fetch from server
-  const res = await axiosBase.get("/api/push/firebase-config");
+  const res = await axiosBase.get("/push/firebase-config");
   return res.data; // { config: {...}, vapidKey: "..." }
 };
 
