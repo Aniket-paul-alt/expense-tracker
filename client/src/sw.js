@@ -4,6 +4,14 @@ import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+// Force immediate activation of the new Service Worker
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // ─── Push Event ────────────────────────────────────────────────────────────
 // Handles both FCM (Chrome passes the message here) and legacy VAPID.
 // When FCM sends a message with a .notification field, Chrome on Android
@@ -19,12 +27,12 @@ self.addEventListener('push', (event) => {
     payload = { title: 'Expense Tracker', body: event.data.text() }; 
   }
 
-  // FCM wraps our custom data inside the `.data` property
+  // Robustly extract data
   const n = payload.notification || {};
-  const d = payload.data || payload || {}; // Fallback to flat payload for legacy VAPID
+  const d = payload.data || payload || {};
 
   const title = n.title || d.title || 'Expense Tracker';
-  const body  = n.body  || d.body  || '';
+  const body  = n.body  || d.body  || 'You have a new alert';
   const icon  = n.icon  || d.icon  || '/icons/pwa-192x192.png';
   const badge = d.badge || '/icons/pwa-192x192.png';
   const tag   = d.tag   || 'expense-tracker';
@@ -38,6 +46,12 @@ self.addEventListener('push', (event) => {
       tag, 
       renotify: true, 
       data: { url } 
+    }).catch(err => {
+      console.error("[SW] Push notification display failed:", err);
+      // Fallback display if the custom parameters crash it
+      return self.registration.showNotification("Expense Tracker", {
+        body: "You have a new alert"
+      });
     })
   );
 });
