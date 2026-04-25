@@ -68,17 +68,19 @@ const subscribe = async (req, res) => {
     }
 
     if (fcmToken) {
-      // Upsert by FCM token
+      // Upsert by userId — one FCM token per user (updates on re-subscribe)
+      // Using $set ensures only named fields are written; no subscription field
+      // means MongoDB won't try to index a null endpoint.
       await PushSubscription.findOneAndUpdate(
-        { fcmToken },
-        { userId: req.user._id, fcmToken, subscription: subscription || undefined },
+        { userId: req.user._id, fcmToken },
+        { $set: { userId: req.user._id, fcmToken } },
         { upsert: true, new: true }
       );
     } else {
-      // Upsert by VAPID endpoint (legacy)
+      // Upsert by VAPID endpoint (legacy fallback)
       await PushSubscription.findOneAndUpdate(
         { "subscription.endpoint": subscription.endpoint },
-        { userId: req.user._id, subscription },
+        { $set: { userId: req.user._id, subscription } },
         { upsert: true, new: true }
       );
     }
@@ -86,7 +88,7 @@ const subscribe = async (req, res) => {
     console.log(`[Push] Subscribed user ${req.user._id} (FCM: ${!!fcmToken}, VAPID: ${!!subscription})`);
     return res.status(201).json({ success: true, message: "Subscribed to push notifications." });
   } catch (err) {
-    console.error("Push subscribe error:", err);
+    console.error("Push subscribe error:", err.code, err.message, err);
     return res.status(500).json({ success: false, message: "Failed to save subscription." });
   }
 };
