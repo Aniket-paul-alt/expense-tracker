@@ -13,17 +13,32 @@ self.addEventListener('push', (event) => {
   if (!event.data) return;
 
   let payload = {};
-  try { payload = event.data.json(); } catch { payload = { title: 'Expense Tracker', body: event.data.text() }; }
+  try { 
+    payload = event.data.json(); 
+  } catch { 
+    payload = { title: 'Expense Tracker', body: event.data.text() }; 
+  }
 
-  const title = payload.title || payload.notification?.title || 'Expense Tracker';
-  const body  = payload.body  || payload.notification?.body  || '';
-  const icon  = payload.icon  || '/icons/pwa-192x192.png';
-  const badge = payload.badge || '/icons/pwa-192x192.png';
-  const tag   = payload.tag   || 'expense-tracker';
-  const url   = payload.url   || payload.fcmOptions?.link || '/';
+  // FCM wraps our custom data inside the `.data` property
+  const n = payload.notification || {};
+  const d = payload.data || payload || {}; // Fallback to flat payload for legacy VAPID
+
+  const title = n.title || d.title || 'Expense Tracker';
+  const body  = n.body  || d.body  || '';
+  const icon  = n.icon  || d.icon  || '/icons/pwa-192x192.png';
+  const badge = d.badge || '/icons/pwa-192x192.png';
+  const tag   = d.tag   || 'expense-tracker';
+  const url   = d.url   || payload.fcmOptions?.link || '/';
 
   event.waitUntil(
-    self.registration.showNotification(title, { body, icon, badge, tag, renotify: true, data: { url } })
+    self.registration.showNotification(title, { 
+      body, 
+      icon, 
+      badge, 
+      tag, 
+      renotify: true, 
+      data: { url } 
+    })
   );
 });
 
