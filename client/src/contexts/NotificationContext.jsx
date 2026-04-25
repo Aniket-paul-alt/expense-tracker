@@ -23,7 +23,7 @@ export const useNotifications = () => {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const NotificationProvider = ({ children }) => {
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { user, isLoggedIn } = useSelector((state) => state.auth);
 
   const [permission,    setPermission]    = useState(getNotificationPermission());
   const [isSubscribed,  setIsSubscribed]  = useState(false);
@@ -32,7 +32,7 @@ export const NotificationProvider = ({ children }) => {
 
   // ── Check subscription status when user logs in ───────────────────────────
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isLoggedIn) return;
 
     getIsSubscribed()
       .then(setIsSubscribed)
@@ -49,13 +49,13 @@ export const NotificationProvider = ({ children }) => {
 
     navigator.serviceWorker?.addEventListener("message", handleSWMessage);
     return () => navigator.serviceWorker?.removeEventListener("message", handleSWMessage);
-  }, [isAuthenticated]);
+  }, [isLoggedIn]);
 
   // ── FCM Foreground Message Handler ───────────────────────────────────────
   // When the app is open (foreground), FCM does NOT show a system notification.
   // We catch the message here and show a toast instead so the user still sees it.
   useEffect(() => {
-    if (!isAuthenticated || permission !== "granted") return;
+    if (!isLoggedIn || permission !== "granted") return;
 
     let unsubscribeFn;
     onForegroundMessage((payload) => {
@@ -71,7 +71,7 @@ export const NotificationProvider = ({ children }) => {
       .catch(() => {}); // non-fatal if firebase isn't configured yet
 
     return () => { if (typeof unsubscribeFn === "function") unsubscribeFn(); };
-  }, [isAuthenticated, permission]);
+  }, [isLoggedIn, permission]);
 
   // ── Request permission + subscribe ────────────────────────────────────────
   const subscribe = useCallback(async () => {

@@ -421,7 +421,7 @@ const DangerZoneSection = () => {
 // ─── Notifications Section ───────────────────────────────────────────────────
 
 const NotificationsSection = () => {
-  const { isAuthenticated, user } = useSelector((s) => s.auth);
+  const { isLoggedIn, user } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
   const {
     permission, isSubscribed, isLoading, error, subscribe, unsubscribe, isSupported,
