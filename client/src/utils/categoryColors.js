@@ -9,6 +9,7 @@ export const CATEGORY_COLORS = {
   travel:        "#f43f5e",
   entertainment: "#ec4899",
   investment:    "#10b981",
+  hobby:         "#d946ef",
   other:         "#6b7280",
 };
 
@@ -27,6 +28,7 @@ export const CATEGORY_ICONS = {
   travel:        "✈️",
   entertainment: "🎬",
   investment:    "📈",
+  hobby:         "🎨",
   other:         "📦",
 };
 

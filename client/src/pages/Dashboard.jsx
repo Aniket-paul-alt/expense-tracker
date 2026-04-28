@@ -77,6 +77,11 @@ const Dashboard = () => {
       : d.date,
   }));
 
+  const last7DaysTotal = (overview?.last7DaysTrend || []).reduce(
+    (sum, d) => sum + (d.total || 0),
+    0
+  );
+
   if (isError) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -182,7 +187,7 @@ const Dashboard = () => {
             {!isLoading && (
               <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30
                 px-2.5 py-1 rounded-full">
-                {formatCompact(overview?.summary?.weekly?.total || 0, symbol)} total
+                {formatCompact(last7DaysTotal, symbol)} total
               </span>
             )}
           </div>

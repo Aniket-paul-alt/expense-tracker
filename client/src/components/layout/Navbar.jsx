@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
+import NotificationPanel from "./NotificationPanel";
 
 const pageTitles = {
   "/":          { title: "Dashboard",  subtitle: "Your financial overview" },
@@ -13,8 +15,9 @@ const pageTitles = {
 const Navbar = () => {
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
-  const alerts = useSelector((state) => state.budget.alerts);
+  const { unreadCount } = useSelector((state) => state.notifications);
   const { toggleTheme, isDark } = useTheme();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const page = pageTitles[location.pathname] || { title: "Expense Tracker", subtitle: "" };
 
@@ -36,7 +39,7 @@ const Navbar = () => {
         <p className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">{page.subtitle}</p>
       </div>
 
-      {/* Right: date + alerts + avatar */}
+      {/* Right: date + notifications + theme + avatar */}
       <div className="flex items-center gap-3">
 
         {/* Date — hidden on small screens */}
@@ -68,22 +71,34 @@ const Navbar = () => {
           )}
         </button>
 
-        {/* Budget alert bell */}
-        {alerts.length > 0 && (
-          <div className="relative">
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg
-              bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-            </button>
+        {/* Notification Bell */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setNotifOpen(!notifOpen);
+            }}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors
+              ${unreadCount > 0 
+                ? "bg-amber-50 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50" 
+                : "bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+          
+          {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white
-              text-xs rounded-full flex items-center justify-center font-medium">
-              {alerts.length}
+              text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">
+              {unreadCount}
             </span>
-          </div>
-        )}
+          )}
+
+          <NotificationPanel isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
 
         {/* Currency badge */}
         <span className="hidden sm:flex items-center px-2.5 py-1 bg-gray-100 dark:bg-gray-800

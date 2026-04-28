@@ -9,6 +9,7 @@ const buildFilterQuery = (userId, queryParams) => {
     startDate,
     endDate,
     category,
+    subcategory,
     paymentMethod,
     minAmount,
     maxAmount,
@@ -35,6 +36,12 @@ const buildFilterQuery = (userId, queryParams) => {
   if (category) {
     const cats = category.split(",").map((c) => c.trim().toLowerCase());
     filter.category = cats.length === 1 ? cats[0] : { $in: cats };
+  }
+
+  // Subcategory filter
+  if (subcategory) {
+    const subcats = subcategory.split(",").map((c) => c.trim().toLowerCase());
+    filter.subcategory = subcats.length === 1 ? subcats[0] : { $in: subcats };
   }
 
   // Payment method

@@ -9,6 +9,7 @@ const expenseSlice = createSlice({
       startDate: "",
       endDate: "",
       category: "",
+      subcategory: "",
       paymentMethod: "",
       search: "",
       sortBy: "date",
@@ -21,11 +22,15 @@ const expenseSlice = createSlice({
   },
   reducers: {
     setFilters: (state, action) => {
+      // If changing category, reset subcategory
+      if (action.payload.category !== undefined && action.payload.category !== state.filters.category) {
+        state.filters.subcategory = "";
+      }
       state.filters = { ...state.filters, ...action.payload, page: 1 };
     },
     resetFilters: (state) => {
       state.filters = {
-        startDate: "", endDate: "", category: "",
+        startDate: "", endDate: "", category: "", subcategory: "",
         paymentMethod: "", search: "",
         sortBy: "date", order: "desc", page: 1, limit: 20,
       };

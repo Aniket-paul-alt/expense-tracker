@@ -3,6 +3,7 @@ import authReducer from "../features/auth/authSlice";
 import expenseReducer from "../features/expense/expenseSlice";
 import analyticsReducer from "../features/analytics/analyticsSlice";
 import budgetReducer from "../features/budget/budgetSlice";
+import notificationsReducer from "../features/notifications/notificationsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     expenses: expenseReducer,
     analytics: analyticsReducer,
     budget: budgetReducer,
+    notifications: notificationsReducer,
   },
 });

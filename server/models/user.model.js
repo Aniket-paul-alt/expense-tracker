@@ -65,6 +65,11 @@ const userSchema = new mongoose.Schema(
         default: true,
       },
     },
+    customSubcategories: {
+      type: Map,
+      of: [String],
+      default: {},
+    },
     isVerified: {
       type: Boolean,
       default: false,

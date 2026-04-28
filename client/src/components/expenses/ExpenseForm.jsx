@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { updateProfile } from "../../features/auth/authSlice";
+import { addNotification } from "../../features/notifications/notificationsSlice";
 import toast from "react-hot-toast";
 import expenseService from "../../services/expenseServices";
 import { getTodayISO } from "../../utils/dateHelpers";
@@ -70,6 +72,7 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -87,6 +90,34 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
     },
   });
 
+  const dispatch = useDispatch();
+  const [newSubcategory, setNewSubcategory] = useState("");
+  const [isAddingSub, setIsAddingSub] = useState(false);
+
+  const defaultHobbySubcategories = ["Pet", "Plantation", "Reading", "Gaming"];
+  const customHobbySubcategories = user?.customSubcategories?.hobby || [];
+  const allHobbySubcategories = [...new Set([...defaultHobbySubcategories, ...customHobbySubcategories])];
+
+  const handleAddSubcategory = async () => {
+    if (!newSubcategory.trim()) return;
+    const addedSub = newSubcategory.trim();
+    const updatedHobbySubs = [...customHobbySubcategories, addedSub];
+    
+    try {
+      await dispatch(updateProfile({
+        customSubcategories: {
+          ...user?.customSubcategories,
+          hobby: updatedHobbySubs
+        }
+      })).unwrap();
+      setNewSubcategory("");
+      setIsAddingSub(false);
+      setValue("subcategory", addedSub);
+    } catch (err) {
+      toast.error("Failed to add subcategory");
+    }
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data) => expenseService.create(data),
@@ -97,10 +128,21 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
 
       // Show budget alert if triggered
       if (res.budgetAlert) {
-        const { type, message } = res.budgetAlert;
+        const { type, message, category, period, spent, budget, percentage } = res.budgetAlert;
         type === "exceeded"
           ? toast.error(message)
           : toast(message, { icon: "⚠️" });
+        // Persist to notification history
+        dispatch(addNotification({
+          type: type === "exceeded" ? "budget_exceeded" : "budget_warning",
+          title: type === "exceeded" ? "🚨 Budget Exceeded" : "⚠️ Budget Warning",
+          message,
+          category,
+          period,
+          spent,
+          budget,
+          percentage,
+        }));
       } else {
         toast.success("Expense added!");
       }
@@ -200,6 +242,80 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
           <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>
         )}
       </Field>
+
+      {/* Subcategory for Hobby */}
+      {selectedCategory === "hobby" && (
+        <Field label="Hobby Type" error={errors.subcategory?.message}>
+          <div className="flex flex-wrap gap-2">
+            {allHobbySubcategories.map((sub) => {
+              const isSelected = watch("subcategory") === sub;
+              return (
+                <label
+                  key={sub}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors
+                    ${isSelected
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-indigo-400"
+                    }`}
+                >
+                  <input
+                    type="radio"
+                    value={sub}
+                    {...register("subcategory")}
+                    className="sr-only"
+                  />
+                  {sub}
+                </label>
+              );
+            })}
+            
+            {/* Add new subcategory button */}
+            {!isAddingSub ? (
+              <button
+                type="button"
+                onClick={() => setIsAddingSub(true)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:border-indigo-600 transition-colors flex items-center gap-1"
+              >
+                <span>+ Add</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={newSubcategory}
+                  onChange={(e) => setNewSubcategory(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSubcategory();
+                    } else if (e.key === "Escape") {
+                      setIsAddingSub(false);
+                      setNewSubcategory("");
+                    }
+                  }}
+                  className="px-3 py-1 text-xs border rounded-full outline-none focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  placeholder="Type & press Enter"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSubcategory}
+                  className="p-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingSub(false); setNewSubcategory(""); }}
+                  className="p-1 text-gray-400 hover:text-red-500"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </Field>
+      )}
 
       {/* Date + Payment method row */}
       <div className="grid grid-cols-2 gap-3">

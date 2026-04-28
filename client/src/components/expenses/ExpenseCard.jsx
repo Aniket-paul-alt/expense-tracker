@@ -37,7 +37,10 @@ const ExpenseCard = ({ expense, onEdit, onDelete }) => {
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{expense.category}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">
+            {expense.category}
+            {expense.category === 'hobby' && expense.subcategory ? ` - ${expense.subcategory}` : ''}
+          </span>
           <span className="text-gray-200 dark:text-gray-700">·</span>
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {formatDate(expense.date, "dd MMM yyyy")}

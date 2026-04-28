@@ -17,7 +17,7 @@ const generateToken = (id) => {
 const sendTokenResponse = (user, statusCode, res) => {
   const token = generateToken(user._id);
 
-  // Clean user object — remove sensitive fields before sending
+    // Clean user object — remove sensitive fields before sending
   const userData = {
     _id: user._id,
     name: user.name,
@@ -25,6 +25,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     currency: user.currency,
     preferences: user.preferences,
     budgets: user.budgets,
+    customSubcategories: user.customSubcategories,
     createdAt: user.createdAt,
   };
 
@@ -145,6 +146,7 @@ const getMe = async (req, res) => {
         currency: user.currency,
         preferences: user.preferences,
         budgets: user.budgets,
+        customSubcategories: user.customSubcategories,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
       },
@@ -163,13 +165,14 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, currency, preferences } = req.body;
+    const { name, currency, preferences, customSubcategories } = req.body;
 
     // Only allow safe fields to be updated here
     const allowedUpdates = {};
     if (name) allowedUpdates.name = name.trim();
     if (currency) allowedUpdates.currency = currency;
     if (preferences) allowedUpdates.preferences = preferences;
+    if (customSubcategories) allowedUpdates.customSubcategories = customSubcategories;
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -186,6 +189,7 @@ const updateProfile = async (req, res) => {
         email: user.email,
         currency: user.currency,
         preferences: user.preferences,
+        customSubcategories: user.customSubcategories,
       },
     });
   } catch (err) {
