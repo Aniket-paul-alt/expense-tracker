@@ -32,7 +32,10 @@ const NotificationPanel = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div ref={panelRef} className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden transition-all duration-200">
+    <div 
+      ref={panelRef} 
+      className="fixed inset-x-4 top-16 mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:w-96 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden transition-all duration-200"
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-gray-800">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
         <div className="flex items-center gap-2">
