@@ -27,48 +27,55 @@ export const subscribeToPush = async () => {
     throw new Error("Push notifications are not supported in this browser.");
   }
 
+  console.log("[Push] Step 1: Waiting for service worker...");
   await navigator.serviceWorker.ready;
+  console.log("[Push] Step 1 done: SW ready");
 
   let fcmToken = null;
 
-  // Step 1 — try FCM (preferred for Android)
+  // Step 2 — try FCM (preferred for Android)
   try {
+    console.log("[Push] Step 2: Getting FCM token... VAPID key:", import.meta.env.VITE_FIREBASE_VAPID_KEY ? "present" : "MISSING");
     fcmToken = await getFCMToken();
-    if (fcmToken) console.log("[Push] FCM token obtained ✅");
+    if (fcmToken) console.log("[Push] Step 2 done: FCM token obtained ✅");
+    else console.warn("[Push] Step 2: FCM token is null (permission not granted?)");
   } catch (fcmErr) {
-    console.warn("[Push] FCM getToken failed:", fcmErr.message);
+    console.warn("[Push] Step 2 failed (FCM getToken):", fcmErr.code, fcmErr.message);
   }
 
-  // Step 2 — VAPID fallback (keeps state detectable via pushManager)
+  // Step 3 — VAPID fallback (keeps state detectable via pushManager)
   let vapidSubscription = null;
   try {
     const registration = await navigator.serviceWorker.ready;
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    console.log("[Push] Step 3: VAPID key source:", vapidKey ? "found" : "MISSING — check Netlify env vars");
     if (vapidKey) {
-      // Try to reuse existing, or create new
       vapidSubscription = await registration.pushManager.getSubscription();
       if (!vapidSubscription) {
+        console.log("[Push] Step 3: Creating new VAPID subscription...");
         vapidSubscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
       }
-      console.log("[Push] VAPID subscription obtained ✅");
+      console.log("[Push] Step 3 done: VAPID subscription ✅");
     }
   } catch (vapidErr) {
     if (!fcmToken) throw vapidErr;
-    console.warn("[Push] VAPID subscribe failed (FCM will handle):", vapidErr.message);
+    console.warn("[Push] Step 3 failed (VAPID, FCM will handle):", vapidErr.message);
   }
 
   if (!fcmToken && !vapidSubscription) {
     throw new Error("Failed to obtain any push subscription.");
   }
 
-  // Step 3 — save to server
+  // Step 4 — save to server
+  console.log("[Push] Step 4: Saving subscription to server...");
   await axiosBase.post("/push/subscribe", {
     fcmToken:     fcmToken     || undefined,
     subscription: vapidSubscription ? vapidSubscription.toJSON() : undefined,
   });
+  console.log("[Push] Step 4 done: Saved to server ✅");
 
   // Persist state so UI stays correct across page reloads
   localStorage.setItem(FCM_STORAGE_KEY, "true");

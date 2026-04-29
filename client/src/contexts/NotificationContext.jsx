@@ -108,11 +108,21 @@ export const NotificationProvider = ({ children }) => {
         return false;
       }
 
-      await subscribeToPush();
+      // Add a timeout so the button never gets permanently stuck
+      const subscribeWithTimeout = Promise.race([
+        subscribeToPush(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Subscription timed out. Check console for details.")), 15000)
+        ),
+      ]);
+
+      await subscribeWithTimeout;
       setIsSubscribed(true);
       return true;
     } catch (err) {
-      setError(err.message || "Failed to enable notifications.");
+      console.error("[Push] Subscribe failed:", err);
+      const msg = err?.message || "Failed to enable notifications.";
+      setError(msg);
       return false;
     } finally {
       setIsLoading(false);
