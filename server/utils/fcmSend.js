@@ -11,12 +11,21 @@ const initAdmin = () => {
     return false;
   }
 
+  // Normalize the private key — Render sometimes stores \n as literal text
+  // This handles: actual newlines, \n escape sequences, and \\n double-escaped
+  let privateKey = FIREBASE_PRIVATE_KEY;
+  if (!privateKey.includes("\n")) {
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
+  // Remove wrapping quotes if present (Render sometimes adds them)
+  privateKey = privateKey.replace(/^["']|["']$/g, "").trim();
+
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId:   FIREBASE_PROJECT_ID,
         clientEmail: FIREBASE_CLIENT_EMAIL,
-        privateKey:  FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        privateKey,
       }),
     });
   }
@@ -69,6 +78,13 @@ const sendFCMToToken = async (fcmToken, { title, body, icon, badge, tag, url }) 
     const stale =
       err.code === "messaging/invalid-registration-token" ||
       err.code === "messaging/registration-token-not-registered";
+    // If credentials are invalid, reset so it retries on next call (after env fix)
+    if (err.code === "app/invalid-credential") {
+      _adminReady = false;
+      if (admin.apps.length) {
+        await admin.app().delete().catch(() => {});
+      }
+    }
     console.error(`[FCM] Send error code=${err.code} message=${err.message}`);
     return { success: false, stale, code: err.code };
   }
