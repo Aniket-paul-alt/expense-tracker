@@ -70,6 +70,10 @@ const userSchema = new mongoose.Schema(
       of: [String],
       default: {},
     },
+    customCategories: {
+      type: [String],
+      default: [],
+    },
     isVerified: {
       type: Boolean,
       default: false,

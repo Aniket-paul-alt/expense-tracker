@@ -1,73 +1,91 @@
-import { createSlice, nanoid } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import notificationService from "../../services/notificationServices";
 
-const STORAGE_KEY = "expense_notifications";
-
-const loadFromStorage = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+export const fetchNotifications = createAsyncThunk(
+  "notifications/fetchAll",
+  async (_, thunkAPI) => {
+    try {
+      const res = await notificationService.getNotifications();
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response.data);
+    }
   }
-};
+);
 
-const saveToStorage = (notifications) => {
-  try {
-    // Keep at most 100 entries
-    const trimmed = notifications.slice(0, 100);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch {}
-};
+export const markReadServer = createAsyncThunk(
+  "notifications/markRead",
+  async (id, thunkAPI) => {
+    try {
+      await notificationService.markRead(id);
+      return id;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const markAllReadServer = createAsyncThunk(
+  "notifications/markAllRead",
+  async (_, thunkAPI) => {
+    try {
+      await notificationService.markAllRead();
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const clearAllServer = createAsyncThunk(
+  "notifications/clearAll",
+  async (_, thunkAPI) => {
+    try {
+      await notificationService.clearAll();
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response.data);
+    }
+  }
+);
 
 const notificationsSlice = createSlice({
   name: "notifications",
   initialState: {
-    items: loadFromStorage(),
+    items: [],
     unreadCount: 0,
+    loading: false,
   },
   reducers: {
     addNotification: (state, action) => {
-      const notification = {
-        id: nanoid(),
-        timestamp: new Date().toISOString(),
-        read: false,
-        ...action.payload,
-        // type: "budget_exceeded" | "budget_warning" | "info"
-        // title, message, category, period, spent, budget, percentage
-      };
-      state.items.unshift(notification); // newest first
-      state.unreadCount = state.items.filter((n) => !n.read).length;
-      saveToStorage(state.items);
+      // For immediate feedback from local actions (like budget alerts after creation)
+      state.items.unshift(action.payload);
+      state.unreadCount = state.items.filter((n) => !n.isRead).length;
     },
-    markAllRead: (state) => {
-      state.items = state.items.map((n) => ({ ...n, read: true }));
-      state.unreadCount = 0;
-      saveToStorage(state.items);
-    },
-    markRead: (state, action) => {
-      const item = state.items.find((n) => n.id === action.payload);
-      if (item) item.read = true;
-      state.unreadCount = state.items.filter((n) => !n.read).length;
-      saveToStorage(state.items);
-    },
-    clearAll: (state) => {
-      state.items = [];
-      state.unreadCount = 0;
-      saveToStorage([]);
-    },
-    // Called on app boot to recount unread from localStorage
-    syncUnread: (state) => {
-      state.unreadCount = state.items.filter((n) => !n.read).length;
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchNotifications.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchNotifications.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.unreadCount = state.items.filter((n) => !n.isRead).length;
+        state.loading = false;
+      })
+      .addCase(markReadServer.fulfilled, (state, action) => {
+        const item = state.items.find((n) => n._id === action.payload);
+        if (item) item.isRead = true;
+        state.unreadCount = state.items.filter((n) => !n.isRead).length;
+      })
+      .addCase(markAllReadServer.fulfilled, (state) => {
+        state.items = state.items.map((n) => ({ ...n, isRead: true }));
+        state.unreadCount = 0;
+      })
+      .addCase(clearAllServer.fulfilled, (state) => {
+        state.items = [];
+        state.unreadCount = 0;
+      });
   },
 });
 
-export const {
-  addNotification,
-  markAllRead,
-  markRead,
-  clearAll,
-  syncUnread,
-} = notificationsSlice.actions;
-
+export const { addNotification } = notificationsSlice.actions;
 export default notificationsSlice.reducer;

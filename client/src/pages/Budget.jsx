@@ -89,6 +89,16 @@ const BudgetForm = ({ existing = null, onSuccess, onCancel }) => {
   const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg \
 outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors";
 
+  const customCategories = user?.customCategories || [];
+  const mergedCategories = [
+    ...CATEGORIES,
+    ...customCategories.map(cat => ({
+      value: cat.toLowerCase(),
+      label: cat,
+      icon: "📁" 
+    }))
+  ];
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
@@ -110,7 +120,7 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-g
         ) : (
           <>
             <div className="grid grid-cols-5 gap-2">
-              {CATEGORIES.map((cat) => {
+              {mergedCategories.map((cat) => {
                 const isSelected = selectedCategory === cat.value;
                 return (
                   <label

@@ -1,5 +1,6 @@
 const Expense = require("../models/expense.model");
 const Category = require("../models/category.model");
+const Notification = require("../models/notification.model");
 const mongoose = require("mongoose");
 
 // ─── Helper: Build Filter Query ──────────────────────────────────────────────
@@ -194,16 +195,33 @@ const createExpense = async (req, res) => {
       expense.date
     );
 
-    // ── Fire push notification for budget alert (non-blocking) ────────────────
+    // ── Save to Notification History & Fire push notification ────────────────
     if (budgetAlert && req.user.preferences?.budgetAlerts !== false) {
-      const { sendPushToUser } = require("../utils/sendPush");
       const emoji = budgetAlert.type === "exceeded" ? "🚨" : "⚠️";
+      const title = `${emoji} Budget ${budgetAlert.type === "exceeded" ? "Exceeded" : "Warning"}`;
+      
+      // Save to database for syncing
+      await Notification.create({
+        userId: req.user._id,
+        type: budgetAlert.type === "exceeded" ? "budget_exceeded" : "budget_warning",
+        title: title,
+        message: budgetAlert.message,
+        category: budgetAlert.category,
+        metadata: {
+          spent: budgetAlert.spent,
+          budget: budgetAlert.budget,
+          percentage: budgetAlert.percentage
+        }
+      });
+
+      // Fire push notification (non-blocking)
+      const { sendPushToUser } = require("../utils/sendPush");
       sendPushToUser(req.user._id, {
-        title: `${emoji} Budget ${budgetAlert.type === "exceeded" ? "Exceeded" : "Warning"}`,
+        title: title,
         body:  budgetAlert.message,
         tag:   `budget-${budgetAlert.category}`,
         url:   "/budget",
-      }).catch(() => {}); // fire-and-forget, never block the response
+      }).catch(() => {}); 
     }
 
     return res.status(201).json({

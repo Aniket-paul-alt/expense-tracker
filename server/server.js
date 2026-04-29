@@ -44,6 +44,7 @@ const expenseRoutes  = require('./routes/expense.router');
 const analyticsRoutes = require('./routes/analytics.router');
 const budgetRoutes   = require('./routes/budget.router');
 const pushRoutes     = require('./routes/push.router');
+const notificationRoutes = require('./routes/notification.routes');
 
 // Mount routes
 app.use('/api/auth',      authRoutes);
@@ -51,6 +52,7 @@ app.use('/api/expenses',  expenseRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/budgets',   budgetRoutes);
 app.use('/api/push',      pushRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Start scheduled jobs ─────────────────────────────────────────────────────
 const { startDailyReminderJob } = require('./jobs/dailyReminder');

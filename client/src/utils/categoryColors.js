@@ -13,8 +13,30 @@ export const CATEGORY_COLORS = {
   other:         "#6b7280",
 };
 
+const hslToHex = (h, s, l) => {
+  l /= 100;
+  const a = s * Math.min(l, 1 - l) / 100;
+  const f = n => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+};
+
 export const getCategoryColor = (category) => {
-  return CATEGORY_COLORS[category?.toLowerCase()] || "#6b7280";
+  const cat = category?.toLowerCase();
+  if (CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
+  
+  if (!cat) return "#6b7280";
+  
+  let hash = 0;
+  for (let i = 0; i < cat.length; i++) {
+    hash = cat.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const h = Math.abs(hash) % 360;
+  return hslToHex(h, 70, 45); 
 };
 
 export const CATEGORY_ICONS = {
@@ -33,5 +55,5 @@ export const CATEGORY_ICONS = {
 };
 
 export const getCategoryIcon = (category) => {
-  return CATEGORY_ICONS[category?.toLowerCase()] || "📦";
+  return CATEGORY_ICONS[category?.toLowerCase()] || "📁";
 };

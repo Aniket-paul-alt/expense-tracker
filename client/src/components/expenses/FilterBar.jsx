@@ -86,6 +86,7 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-g
       <div>
         <label className="block text-xs text-gray-400 mb-2">Category</label>
         <div className="flex flex-wrap gap-1.5">
+          {/* Default Categories */}
           {Object.entries(CATEGORY_ICONS).map(([key, icon]) => {
             const active = filters.category === key;
             return (
@@ -101,6 +102,27 @@ outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 text-g
               >
                 <span style={{ fontSize: "12px" }}>{icon}</span>
                 <span className="capitalize">{key}</span>
+              </button>
+            );
+          })}
+
+          {/* Custom Categories */}
+          {user?.customCategories?.map((cat) => {
+            const val = cat.toLowerCase();
+            const active = filters.category === val;
+            return (
+              <button
+                key={val}
+                onClick={() => update("category", active ? "" : val)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                  text-xs font-medium transition-colors border
+                  ${active
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                  }`}
+              >
+                <span style={{ fontSize: "12px" }}>📁</span>
+                <span className="capitalize">{cat}</span>
               </button>
             );
           })}

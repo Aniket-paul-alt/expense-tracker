@@ -8,8 +8,10 @@ import { updateProfile } from "../../features/auth/authSlice";
 import { addNotification } from "../../features/notifications/notificationsSlice";
 import toast from "react-hot-toast";
 import expenseService from "../../services/expenseServices";
+import budgetService from "../../services/budgetServices";
 import { getTodayISO } from "../../utils/dateHelpers";
 import { CATEGORY_ICONS } from "../../utils/categoryColors";
+import ConfirmModal from "../common/ConfirmModal";
 
 const schema = z.object({
   amount: z
@@ -93,6 +95,20 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
   const dispatch = useDispatch();
   const [newSubcategory, setNewSubcategory] = useState("");
   const [isAddingSub, setIsAddingSub] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [catToDelete, setCatToDelete] = useState(null);
+
+  const customCategories = user?.customCategories || [];
+  const mergedCategories = [
+    ...CATEGORIES.map(c => ({ ...c, isCustom: false })),
+    ...customCategories.map(cat => ({
+      value: cat.toLowerCase(),
+      label: cat,
+      icon: "📁",
+      isCustom: true
+    }))
+  ];
 
   const defaultHobbySubcategories = ["Pet", "Plantation", "Reading", "Gaming"];
   const customHobbySubcategories = user?.customSubcategories?.hobby || [];
@@ -118,6 +134,79 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
     }
   };
 
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) return;
+    const addedCat = newCategory.trim();
+    if (mergedCategories.some(c => c.label.toLowerCase() === addedCat.toLowerCase())) {
+      toast.error("Category already exists");
+      return;
+    }
+
+    try {
+      await dispatch(updateProfile({
+        customCategories: [...customCategories, addedCat]
+      })).unwrap();
+      setNewCategory("");
+      setIsAddingCategory(false);
+      setValue("category", addedCat.toLowerCase());
+    } catch (err) {
+      toast.error("Failed to add category");
+    }
+  };
+
+  const handleDeleteCategory = async (e, catLabel) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const catVal = catLabel.toLowerCase();
+    
+    try {
+      // 1. Check for expenses
+      const expRes = await expenseService.getAll({ 
+        category: catVal, 
+        limit: 1 
+      });
+      
+      if (expRes.data && expRes.data.length > 0) {
+        toast.error(`Cannot delete "${catLabel}". It has existing expenses. First you have to delete all expenses of this category.`);
+        return;
+      }
+
+      // 2. Check for budgets
+      const budRes = await budgetService.getAll();
+      const budgetExists = budRes.data?.some(b => b.category === catVal);
+      
+      if (budgetExists) {
+        toast.error(`Cannot delete "${catLabel}". It has an active budget.`);
+        return;
+      }
+      
+      setCatToDelete(catLabel);
+    } catch (err) {
+      toast.error("Failed to verify category status");
+    }
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!catToDelete) return;
+
+    try {
+      const updatedCats = customCategories.filter(c => c !== catToDelete);
+      await dispatch(updateProfile({
+        customCategories: updatedCats
+      })).unwrap();
+      
+      if (selectedCategory === catToDelete.toLowerCase()) {
+        setValue("category", "", { shouldValidate: false });
+      }
+      toast.success("Category deleted");
+    } catch (err) {
+      toast.error("Failed to delete category");
+    } finally {
+      setCatToDelete(null);
+    }
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data) => expenseService.create(data),
@@ -134,14 +223,19 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
           : toast(message, { icon: "⚠️" });
         // Persist to notification history
         dispatch(addNotification({
+          _id: Date.now().toString(), // temporary ID
           type: type === "exceeded" ? "budget_exceeded" : "budget_warning",
           title: type === "exceeded" ? "🚨 Budget Exceeded" : "⚠️ Budget Warning",
           message,
           category,
-          period,
-          spent,
-          budget,
-          percentage,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          metadata: {
+            period,
+            spent,
+            budget,
+            percentage,
+          },
         }));
       } else {
         toast.success("Expense added!");
@@ -211,13 +305,13 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
       {/* Category */}
       <Field label="Category" error={errors.category?.message}>
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-          {CATEGORIES.map((cat) => {
+          {mergedCategories.map((cat) => {
             const isSelected = selectedCategory === cat.value;
             return (
               <label
                 key={cat.value}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg border
-                  cursor-pointer transition-all text-center
+                className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border
+                  cursor-pointer transition-all text-center group
                   ${isSelected
                     ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30"
                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
@@ -229,6 +323,18 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
                   {...register("category")}
                   className="sr-only"
                 />
+                
+                {/* Delete button for custom categories */}
+                {cat.isCustom && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteCategory(e, cat.label)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                )}
+
                 <span style={{ fontSize: "20px" }}>{cat.icon}</span>
                 <span className={`text-xs font-medium truncate w-full text-center
                   ${isSelected ? "text-indigo-700 dark:text-indigo-400" : "text-gray-600 dark:text-gray-400"}`}>
@@ -237,10 +343,53 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
               </label>
             );
           })}
+
+          {/* Add Category Button */}
+          {!isAddingCategory ? (
+            <button
+              type="button"
+              onClick={() => setIsAddingCategory(true)}
+              className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:border-indigo-600 transition-colors"
+            >
+              <span style={{ fontSize: "20px" }}>+</span>
+              <span className="text-[10px] font-medium">Add</span>
+            </button>
+          ) : (
+            <div className="col-span-2 flex items-center gap-1 bg-gray-50 dark:bg-gray-800 p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
+              <input
+                type="text"
+                autoFocus
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddCategory();
+                  } else if (e.key === "Escape") {
+                    setIsAddingCategory(false);
+                    setNewCategory("");
+                  }
+                }}
+                className="flex-1 px-2 py-1 text-xs border rounded outline-none focus:border-indigo-500 dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                placeholder="New Category"
+              />
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                className="p-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsAddingCategory(false); setNewCategory(""); }}
+                className="p-1 text-gray-400 hover:text-red-500"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          )}
         </div>
-        {errors.category && (
-          <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>
-        )}
       </Field>
 
       {/* Subcategory for Hobby */}
@@ -399,6 +548,14 @@ const ExpenseForm = ({ expense = null, onSuccess, onCancel }) => {
           }
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={!!catToDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete the category "${catToDelete}"? This will not delete the expenses already added in this category.`}
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => setCatToDelete(null)}
+      />
     </form>
   );
 };

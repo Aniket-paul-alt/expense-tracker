@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMe } from "../../features/auth/authSlice";
+import { fetchNotifications } from "../../features/notifications/notificationsSlice";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
@@ -10,9 +11,12 @@ const AppLayout = () => {
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
 
-  // Refresh user data on every app load
+  // Refresh user data and notifications on every app load
   useEffect(() => {
-    if (token) dispatch(fetchMe());
+    if (token) {
+      dispatch(fetchMe());
+      dispatch(fetchNotifications());
+    }
   }, [token, dispatch]);
 
   return (

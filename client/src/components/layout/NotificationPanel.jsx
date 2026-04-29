@@ -1,31 +1,36 @@
 import { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { format } from "date-fns";
-import { markAllRead, clearAll, markRead } from "../../features/notifications/notificationsSlice";
+import { 
+  markAllReadServer, 
+  clearAllServer, 
+  markReadServer,
+  fetchNotifications 
+} from "../../features/notifications/notificationsSlice";
 
 const NotificationPanel = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { items, unreadCount } = useSelector((state) => state.notifications);
+  const { items, unreadCount, loading } = useSelector((state) => state.notifications);
   const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchNotifications());
+    }
+  }, [isOpen, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
-        // Only close if it's not the bell button itself (to avoid double toggle)
-        // The bell button is technically outside this component.
-        // But since this is a child of the 'relative' div that contains the bell, 
-        // usually we can just rely on event propagation or checking classes.
-        // However, a simpler way is to check if the click target is the button.
-        // But wait, the onClose is what closes it.
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener("click", handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
@@ -41,7 +46,7 @@ const NotificationPanel = ({ isOpen, onClose }) => {
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button
-              onClick={() => dispatch(markAllRead())}
+              onClick={() => dispatch(markAllReadServer())}
               className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               Mark all read
@@ -59,14 +64,18 @@ const NotificationPanel = ({ isOpen, onClose }) => {
       </div>
 
       <div className="max-h-[400px] overflow-y-auto">
-        {items.length > 0 ? (
+        {loading && items.length === 0 ? (
+          <div className="py-12 text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
+          </div>
+        ) : items.length > 0 ? (
           <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
             {items.map((n) => (
               <div
-                key={n.id}
-                onClick={() => dispatch(markRead(n.id))}
+                key={n._id}
+                onClick={() => !n.isRead && dispatch(markReadServer(n._id))}
                 className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${
-                  !n.read ? "bg-indigo-50/30 dark:bg-indigo-900/10" : ""
+                  !n.isRead ? "bg-indigo-50/30 dark:bg-indigo-900/10" : ""
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -74,7 +83,7 @@ const NotificationPanel = ({ isOpen, onClose }) => {
                     {n.title}
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2">
-                    {format(new Date(n.timestamp), "MMM dd, hh:mm a")}
+                    {format(new Date(n.createdAt), "MMM dd, hh:mm a")}
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -85,9 +94,11 @@ const NotificationPanel = ({ isOpen, onClose }) => {
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 capitalize">
                       {n.category}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 capitalize">
-                      {n.period} budget
-                    </span>
+                    {n.metadata?.period && (
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 capitalize">
+                        {n.metadata.period} budget
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -110,7 +121,7 @@ const NotificationPanel = ({ isOpen, onClose }) => {
       {items.length > 0 && (
         <div className="p-2 border-t border-gray-50 dark:border-gray-800 text-center">
           <button
-            onClick={() => dispatch(clearAll())}
+            onClick={() => dispatch(clearAllServer())}
             className="text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium py-1 px-4"
           >
             Clear All History

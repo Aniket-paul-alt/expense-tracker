@@ -114,4 +114,28 @@ const unsubscribe = async (req, res) => {
   }
 };
 
-module.exports = { getVapidPublicKey, getFirebaseConfig, subscribe, unsubscribe };
+// ─── GET /api/push/status  (public) ──────────────────────────────────────────
+// Diagnostic endpoint to check if the server is correctly configured for push.
+const getPushStatus = (req, res) => {
+  const fcmReady = !!(
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  );
+
+  const vapidReady = !!(
+    process.env.VAPID_PUBLIC_KEY &&
+    process.env.VAPID_PRIVATE_KEY
+  );
+
+  return res.status(200).json({
+    success: true,
+    fcmReady,
+    vapidReady,
+    message: fcmReady && vapidReady 
+      ? "Server is fully configured for push notifications." 
+      : "Server is missing environment variables for push notifications."
+  });
+};
+
+module.exports = { getVapidPublicKey, getFirebaseConfig, subscribe, unsubscribe, getPushStatus };

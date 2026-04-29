@@ -26,6 +26,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     preferences: user.preferences,
     budgets: user.budgets,
     customSubcategories: user.customSubcategories,
+    customCategories: user.customCategories,
     createdAt: user.createdAt,
   };
 
@@ -147,6 +148,7 @@ const getMe = async (req, res) => {
         preferences: user.preferences,
         budgets: user.budgets,
         customSubcategories: user.customSubcategories,
+        customCategories: user.customCategories,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
       },
@@ -173,6 +175,7 @@ const updateProfile = async (req, res) => {
     if (currency) allowedUpdates.currency = currency;
     if (preferences) allowedUpdates.preferences = preferences;
     if (customSubcategories) allowedUpdates.customSubcategories = customSubcategories;
+    if (req.body.customCategories) allowedUpdates.customCategories = req.body.customCategories;
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -190,6 +193,7 @@ const updateProfile = async (req, res) => {
         currency: user.currency,
         preferences: user.preferences,
         customSubcategories: user.customSubcategories,
+        customCategories: user.customCategories,
       },
     });
   } catch (err) {
