@@ -47,14 +47,28 @@ export const getFirebaseMessaging = async () => {
 
 // ─── Get FCM Registration Token ───────────────────────────────────────────────
 // Registers the browser with FCM and returns a token to send to our server.
+// We explicitly register firebase-messaging-sw.js so FCM uses that worker for
+// background messages (instead of our Vite sw.js which doesn't have onBackgroundMessage).
 
 export const getFCMToken = async () => {
-  const registration = await navigator.serviceWorker.ready;
   const { messaging, vapidKey } = await getFirebaseMessaging();
+
+  // Register firebase-messaging-sw.js explicitly so FCM background handler works
+  let fcmRegistration;
+  try {
+    fcmRegistration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js",
+      { scope: "/" }
+    );
+    console.log("[FCM] firebase-messaging-sw.js registered ✅");
+  } catch (err) {
+    console.warn("[FCM] Could not register firebase-messaging-sw.js, falling back to active SW:", err.message);
+    fcmRegistration = await navigator.serviceWorker.ready;
+  }
 
   const token = await getToken(messaging, {
     vapidKey,
-    serviceWorkerRegistration: registration,
+    serviceWorkerRegistration: fcmRegistration,
   });
 
   return token; // null if permission not granted
