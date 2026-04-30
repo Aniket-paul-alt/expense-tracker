@@ -6,10 +6,12 @@
 # ── Secrets scanning ──────────────────────────────────────────────────────────
 # firebase-messaging-sw.js contains the Firebase *client* config (apiKey, projectId, etc.).
 # These are intentionally public values — the Firebase SDK requires them in plain text
-# in a service worker file that cannot use environment variables at runtime.
-# They are NOT server-side secrets; exposing them is safe by design (Firebase docs confirm this).
+# in a service worker file that CANNOT use runtime environment variables.
+# They are NOT server-side secrets; Firebase client config is safe to expose (by design).
+# See: https://firebase.google.com/docs/projects/api-keys
 [build.environment]
   SECRETS_SCAN_OMIT_PATHS = "client/public/firebase-messaging-sw.js"
+  SECRETS_SCAN_OMIT_KEYS  = "VITE_FIREBASE_API_KEY,VITE_FIREBASE_AUTH_DOMAIN,VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_STORAGE_BUCKET,VITE_FIREBASE_MESSAGING_SENDER_ID,VITE_FIREBASE_APP_ID"
 
 [[redirects]]
   from   = "/*"
