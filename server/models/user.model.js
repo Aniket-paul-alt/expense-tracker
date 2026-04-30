@@ -60,6 +60,12 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: true,  // opted-in by default once permission is granted
       },
+      // "HH:MM" in IST — e.g. "20:00" = 8 PM IST. Defaults to 8 PM.
+      reminderTime: {
+        type: String,
+        default: "20:00",
+        match: [/^([01]\d|2[0-3]):[0-5]\d$/, "reminderTime must be HH:MM"],
+      },
       budgetAlerts: {
         type: Boolean,
         default: true,

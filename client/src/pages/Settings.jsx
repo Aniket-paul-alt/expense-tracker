@@ -433,7 +433,11 @@ const NotificationsSection = () => {
   const [budgetAlerts, setBudgetAlerts] = useState(
     user?.preferences?.budgetAlerts !== false
   );
+  const [reminderTime, setReminderTime] = useState(
+    user?.preferences?.reminderTime || "20:00"
+  );
   const [saving, setSaving] = useState(false);
+  const [timeSaved, setTimeSaved] = useState(false);
 
   const handleSubscribe = async () => {
     const ok = await subscribe();
@@ -455,6 +459,22 @@ const NotificationsSection = () => {
       toast.success("Preferences saved!");
     } catch {
       toast.error("Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveReminderTime = async (time) => {
+    setSaving(true);
+    setTimeSaved(false);
+    try {
+      await dispatch(updateProfile({
+        preferences: { ...user?.preferences, reminderTime: time },
+      })).unwrap();
+      setTimeSaved(true);
+      setTimeout(() => setTimeSaved(false), 2000);
+    } catch {
+      toast.error("Failed to save reminder time.");
     } finally {
       setSaving(false);
     }
@@ -546,18 +566,54 @@ const NotificationsSection = () => {
           <div className="space-y-3 border-t border-gray-100 dark:border-gray-800/50 pt-3">
 
             {/* Daily reminder */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">⏰ Daily reminder (8 PM)</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Reminds you to log expenses if you haven't today
-                </p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">⏰ Daily reminder</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    Reminds you to log expenses if you haven't today
+                  </p>
+                </div>
+                <Toggle
+                  checked={dailyReminder}
+                  disabled={saving}
+                  onChange={(v) => { setDailyReminder(v); savePrefs("dailyReminder", v); }}
+                />
               </div>
-              <Toggle
-                checked={dailyReminder}
-                disabled={saving}
-                onChange={(v) => { setDailyReminder(v); savePrefs("dailyReminder", v); }}
-              />
+
+              {/* Time picker — visible only when daily reminder is on */}
+              {dailyReminder && (
+                <div className="flex items-center justify-between gap-3 pl-1 pt-0.5">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Reminder time</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">Your local time (IST)</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {timeSaved && (
+                      <span className="text-[11px] text-green-600 dark:text-green-400 font-medium animate-fade-in">
+                        ✓ Saved
+                      </span>
+                    )}
+                    <input
+                      id="reminder-time-picker"
+                      type="time"
+                      value={reminderTime}
+                      disabled={saving}
+                      onChange={(e) => {
+                        const t = e.target.value;
+                        if (!t) return;
+                        setReminderTime(t);
+                        saveReminderTime(t);
+                      }}
+                      className="px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-700
+                        rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                        focus:outline-none focus:ring-2 focus:ring-indigo-500
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        [color-scheme:light] dark:[color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Budget alerts */}

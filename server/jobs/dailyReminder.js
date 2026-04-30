@@ -6,16 +6,20 @@ const { sendPushToUser } = require("../utils/sendPush");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Returns {startOfDay, endOfDay} in IST (UTC+5:30) for the current moment.
- * The server (Render) runs in UTC, so we must manually offset.
- */
-const getISTDayBounds = () => {
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // 5h 30m in ms
-  const nowUTC = Date.now();
-  const nowIST = new Date(nowUTC + IST_OFFSET_MS);
+/** Returns current IST time as "HH:MM" (zero-padded). */
+const getCurrentISTTime = () => {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+  const hh = String(nowIST.getUTCHours()).padStart(2, "0");
+  const mm = String(nowIST.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
 
-  // Midnight and end-of-day in IST, then convert back to UTC for Mongo queries
+/** Returns {startOfDay, endOfDay} in UTC for today's IST calendar date. */
+const getISTDayBounds = () => {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+
   const midnightIST = new Date(
     Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate(), 0, 0, 0)
   );
@@ -23,93 +27,73 @@ const getISTDayBounds = () => {
     Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate(), 23, 59, 59, 999)
   );
 
-  // Convert IST midnight/end back to actual UTC timestamps
-  const startOfDay = new Date(midnightIST.getTime() - IST_OFFSET_MS);
-  const endOfDay   = new Date(endIST.getTime()   - IST_OFFSET_MS);
-
-  return { startOfDay, endOfDay };
+  return {
+    startOfDay: new Date(midnightIST.getTime() - IST_OFFSET_MS),
+    endOfDay:   new Date(endIST.getTime()   - IST_OFFSET_MS),
+  };
 };
 
-// ─── Core job logic (exported so it can be triggered manually for testing) ────
+// ─── Core job logic ───────────────────────────────────────────────────────────
+// `istTime` — "HH:MM" to match against. Defaults to the current IST minute.
+// Exported so the manual test endpoint can inject a specific time.
 
-const runDailyReminderJob = async () => {
-  const jobStart = new Date().toISOString();
-  console.log(`\n========================================`);
-  console.log(`[DailyReminder] ▶ Job started at ${jobStart}`);
+const runDailyReminderJob = async (istTime) => {
+  const matchTime = istTime || getCurrentISTTime();
+  console.log(`\n[DailyReminder] ▶ Checking reminderTime="${matchTime}" at ${new Date().toISOString()}`);
 
   try {
-    // ── Step 1: Find all users with at least one push subscription ────────────
+    // ── Step 1: Find subscribed users whose reminder time matches NOW ─────────
+    // First get all userIds that have a subscription in DB
     const subscribedUserIds = await PushSubscription.distinct("userId");
-    console.log(`[DailyReminder] 📋 Total subscribed userIds: ${subscribedUserIds.length}`);
-
     if (!subscribedUserIds.length) {
-      console.log("[DailyReminder] ⚠️  No subscriptions in DB — aborting.");
+      console.log("[DailyReminder] No subscriptions — skipping.");
       return;
     }
 
-    // ── Step 2: Filter to users who have dailyReminder enabled ───────────────
-    // We fetch ALL subscribed users and filter in JS to avoid Mongo dot-path
-    // ambiguity when preferences is absent entirely.
+    // Query users whose reminderTime matches the current minute AND have reminder enabled
     const users = await User.find({
       _id: { $in: subscribedUserIds },
+      // reminderTime matches (or field absent → treat as default "20:00")
+      $or: [
+        { "preferences.reminderTime": matchTime },
+        // Existing users without the field set default to "20:00"
+        ...(matchTime === "20:00"
+          ? [{ "preferences.reminderTime": { $exists: false } }]
+          : []),
+      ],
+      // dailyReminder must not be explicitly set to false
+      "preferences.dailyReminder": { $ne: false },
     }).select("_id name preferences");
 
-    console.log(`[DailyReminder] 👥 Users fetched from DB: ${users.length}`);
-
-    // Log each user's dailyReminder preference for debugging
-    users.forEach((u) => {
-      const pref = u.preferences?.dailyReminder;
-      console.log(
-        `[DailyReminder]   • ${u.name} (${u._id}) — preferences.dailyReminder = ${pref}`
-      );
-    });
-
-    // Keep only users who have dailyReminder enabled (or not explicitly disabled)
-    const eligibleUsers = users.filter((u) => {
-      const val = u.preferences?.dailyReminder;
-      // true OR undefined/null (not explicitly set to false)
-      return val !== false;
-    });
-    console.log(`[DailyReminder] ✅ Eligible users (reminder not disabled): ${eligibleUsers.length}`);
-
-    if (!eligibleUsers.length) {
-      console.log("[DailyReminder] ⚠️  No eligible users — all have disabled daily reminder.");
+    if (!users.length) {
+      // Totally normal — most minutes nobody has their alarm set to this time
       return;
     }
 
-    // ── Step 3: Compute today's IST date window ────────────────────────────────
-    const { startOfDay, endOfDay } = getISTDayBounds();
-    console.log(`[DailyReminder] 🕐 IST day window:`);
-    console.log(`[DailyReminder]   startOfDay (UTC) = ${startOfDay.toISOString()}`);
-    console.log(`[DailyReminder]   endOfDay   (UTC) = ${endOfDay.toISOString()}`);
+    console.log(`[DailyReminder] ✅ ${users.length} user(s) have reminder at ${matchTime}:`);
+    users.forEach((u) =>
+      console.log(`[DailyReminder]   • ${u.name} (${u._id}) reminderTime=${u.preferences?.reminderTime || "20:00 (default)"}`)
+    );
 
-    // ── Step 4: Find who already logged expenses in this IST day ─────────────
+    // ── Step 2: Find who already logged expenses today (IST day) ─────────────
+    const { startOfDay, endOfDay } = getISTDayBounds();
     const usersWithExpensesToday = await Expense.distinct("userId", {
-      userId: { $in: eligibleUsers.map((u) => u._id) },
+      userId: { $in: users.map((u) => u._id) },
       date:   { $gte: startOfDay, $lte: endOfDay },
     });
 
     const expensedSet = new Set(usersWithExpensesToday.map((id) => id.toString()));
-    console.log(
-      `[DailyReminder] 💰 Users who already logged today: ${usersWithExpensesToday.length}` +
-      (usersWithExpensesToday.length ? ` [${[...expensedSet].join(", ")}]` : "")
-    );
+    console.log(`[DailyReminder] 💰 Already logged today: ${usersWithExpensesToday.length}`);
 
-    // ── Step 5: Filter to users who have NOT logged today ─────────────────────
-    const usersToNotify = eligibleUsers.filter(
-      (u) => !expensedSet.has(u._id.toString())
-    );
-    console.log(`[DailyReminder] 🔔 Users to notify: ${usersToNotify.length}`);
-    usersToNotify.forEach((u) =>
-      console.log(`[DailyReminder]   → Sending reminder to ${u.name} (${u._id})`)
-    );
+    // ── Step 3: Notify those who have NOT logged today ────────────────────────
+    const usersToNotify = users.filter((u) => !expensedSet.has(u._id.toString()));
+    console.log(`[DailyReminder] 🔔 Sending to ${usersToNotify.length} user(s)`);
 
     if (!usersToNotify.length) {
-      console.log("[DailyReminder] ✅ Everyone logged expenses today — no reminders needed.");
+      console.log("[DailyReminder] ✅ Everyone logged today — no reminders needed.");
       return;
     }
 
-    // ── Step 6: Send push notifications ───────────────────────────────────────
     const results = await Promise.allSettled(
       usersToNotify.map((user) =>
         sendPushToUser(user._id, {
@@ -123,7 +107,7 @@ const runDailyReminderJob = async () => {
 
     const failed = results.filter((r) => r.status === "rejected");
     console.log(
-      `[DailyReminder] 📤 Notifications sent. Success: ${results.length - failed.length}, Failed: ${failed.length}`
+      `[DailyReminder] 📤 Done — Success: ${results.length - failed.length}, Failed: ${failed.length}`
     );
     failed.forEach((f, i) =>
       console.error(`[DailyReminder]   ✗ Failure #${i + 1}:`, f.reason)
@@ -132,21 +116,16 @@ const runDailyReminderJob = async () => {
   } catch (err) {
     console.error("[DailyReminder] ❌ Unexpected error:", err);
   }
-
-  console.log(`[DailyReminder] ■ Job finished at ${new Date().toISOString()}`);
-  console.log(`========================================\n`);
 };
 
-// ─── Schedule the job ─────────────────────────────────────────────────────────
-// 20:00 IST = 14:30 UTC  →  cron: "30 14 * * *"
+// ─── Schedule ─────────────────────────────────────────────────────────────────
+// Runs every minute. Each tick is a fast indexed query that exits in ~3ms when
+// no users have their reminderTime set to the current minute.
+// Only does real work once per day per user, at their chosen time.
 
 const startDailyReminderJob = () => {
-  // "30 14 * * *" = 14:30 UTC = 20:00 IST every day
-  cron.schedule("30 14 * * *", runDailyReminderJob, {
-    timezone: "UTC", // explicitly UTC so Render's timezone setting can't shift it
-  });
-
-  console.log("[DailyReminder] ⏰ Scheduled at 14:30 UTC (20:00 IST) daily");
+  cron.schedule("* * * * *", () => runDailyReminderJob(), { timezone: "UTC" });
+  console.log("[DailyReminder] ⏰ Scheduled — runs every minute, matches users by their chosen IST time");
 };
 
 module.exports = { startDailyReminderJob, runDailyReminderJob };

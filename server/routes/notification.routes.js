@@ -16,17 +16,24 @@ router.put("/read-all", markAllRead);
 router.put("/:id/read", markAsRead);
 
 // ─── Debug: manually trigger the daily reminder job ───────────────────────────
-// POST /api/notifications/test-daily-reminder
-// Protected — only logged-in users can call it (safe for dev/staging)
+// POST /api/notifications/test-daily-reminder?time=HH:MM
+// - Without ?time → matches users whose reminderTime == current IST minute
+// - With ?time=20:00 → matches users whose reminderTime == "20:00"
 router.post("/test-daily-reminder", async (req, res) => {
   try {
     const { runDailyReminderJob } = require("../jobs/dailyReminder");
-    console.log(`[Debug] Manual daily-reminder trigger by user ${req.user._id}`);
-    // Run async, don't await — logs will show in server console
-    runDailyReminderJob().catch((e) =>
+    const istTime = req.query.time || null; // e.g. "20:00"
+    console.log(
+      `[Debug] Manual daily-reminder trigger by user ${req.user._id}` +
+      (istTime ? ` for time=${istTime}` : " (current IST time)")
+    );
+    runDailyReminderJob(istTime).catch((e) =>
       console.error("[Debug] runDailyReminderJob failed:", e)
     );
-    res.json({ ok: true, message: "Daily reminder job triggered — check server logs." });
+    res.json({
+      ok: true,
+      message: `Daily reminder job triggered for time=${istTime || "current IST minute"} — check server logs.`,
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
