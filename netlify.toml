@@ -1,0 +1,17 @@
+[build]
+  base    = "client"
+  command = "npm run build"
+  publish = "client/dist"
+
+# ── Secrets scanning ──────────────────────────────────────────────────────────
+# firebase-messaging-sw.js contains the Firebase *client* config (apiKey, projectId, etc.).
+# These are intentionally public values — the Firebase SDK requires them in plain text
+# in a service worker file that cannot use environment variables at runtime.
+# They are NOT server-side secrets; exposing them is safe by design (Firebase docs confirm this).
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = "client/public/firebase-messaging-sw.js"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
