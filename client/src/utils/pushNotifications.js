@@ -33,15 +33,9 @@ export const subscribeToPush = async () => {
 
   let fcmToken = null;
 
-  // Step 2 — try FCM (preferred for Android)
-  try {
-    console.log("[Push] Step 2: Getting FCM token... VAPID key:", import.meta.env.VITE_FIREBASE_VAPID_KEY ? "present" : "MISSING");
-    fcmToken = await getFCMToken();
-    if (fcmToken) console.log("[Push] Step 2 done: FCM token obtained ✅");
-    else console.warn("[Push] Step 2: FCM token is null (permission not granted?)");
-  } catch (fcmErr) {
-    console.warn("[Push] Step 2 failed (FCM getToken):", fcmErr.code, fcmErr.message);
-  }
+  // Step 2 — FCM is disabled to force standard VAPID Web Push.
+  // Standard VAPID is much more reliable for background delivery on modern Android/iOS
+  // because it uses the browser's native push manager directly without Firebase wrapper bugs.
 
   // Step 3 — VAPID fallback (keeps state detectable via pushManager)
   let vapidSubscription = null;

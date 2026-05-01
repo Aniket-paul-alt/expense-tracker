@@ -67,20 +67,18 @@ const subscribe = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid subscription object." });
     }
 
-    if (fcmToken) {
-      // Upsert by userId — one FCM token per user (updates on re-subscribe)
-      // Using $set ensures only named fields are written; no subscription field
-      // means MongoDB won't try to index a null endpoint.
+    // Upsert by userId for VAPID subscription (primary)
+    if (subscription && subscription.endpoint) {
+      await PushSubscription.findOneAndUpdate(
+        { "subscription.endpoint": subscription.endpoint },
+        { $set: { userId: req.user._id, subscription, fcmToken } },
+        { upsert: true, new: true }
+      );
+    } else if (fcmToken) {
+      // Fallback for old clients that only send fcmToken
       await PushSubscription.findOneAndUpdate(
         { userId: req.user._id, fcmToken },
         { $set: { userId: req.user._id, fcmToken } },
-        { upsert: true, new: true }
-      );
-    } else {
-      // Upsert by VAPID endpoint (legacy fallback)
-      await PushSubscription.findOneAndUpdate(
-        { "subscription.endpoint": subscription.endpoint },
-        { $set: { userId: req.user._id, subscription } },
         { upsert: true, new: true }
       );
     }

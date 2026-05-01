@@ -50,10 +50,11 @@ const sendPushToUser = async (userId, { title, body, icon, badge, tag, url }) =>
 
     await Promise.allSettled(
       subs.map((sub) => {
-        // If we have an FCM token, use FCM (preferred — guaranteed Android delivery)
-        if (sub.fcmToken) return sendViaFCM(sub, payload);
-        // Otherwise fall back to VAPID web-push
+        // Prioritize VAPID over FCM to bypass FCM-specific Doze deferral issues on Android.
+        // VAPID uses standard Web Push with explicitly set urgency/TTL which is more reliable.
         if (sub.subscription?.endpoint) return sendViaWebPush(sub, payload);
+        // Fallback to FCM only if VAPID is unavailable
+        if (sub.fcmToken) return sendViaFCM(sub, payload);
         return Promise.resolve();
       })
     );
