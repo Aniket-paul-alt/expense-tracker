@@ -39,4 +39,26 @@ router.post("/test-daily-reminder", async (req, res) => {
   }
 });
 
+// ─── Debug: send a raw push directly to the current user ─────────────────────
+// POST /api/notifications/test-push
+// Bypasses all time/expense checks — just sends a notification immediately.
+// Use this to verify VAPID delivery is working end-to-end.
+router.post("/test-push", async (req, res) => {
+  try {
+    const { sendPushToUser } = require("../utils/sendPush");
+    console.log(`[Debug] Direct push test for user ${req.user._id}`);
+    await sendPushToUser(req.user._id, {
+      title: "🔔 Test Notification",
+      body:  "VAPID push is working! Background delivery confirmed ✅",
+      tag:   "test-push",
+      url:   "/",
+    });
+    res.json({ ok: true, message: "Push sent — check your phone!" });
+  } catch (err) {
+    console.error("[Debug] test-push failed:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 module.exports = router;
+
