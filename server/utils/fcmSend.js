@@ -54,15 +54,10 @@ const sendFCMToToken = async (fcmToken, { title, body, icon, badge, tag, url }) 
         tag:       tag   || "expense-tracker",
         renotify:  true,
       },
-      // data is passed to the push event in the service worker
-      data: {
-        title,
-        body,
-        icon:  icon  || "/icons/pwa-192x192.png",
-        badge: badge || "/icons/pwa-192x192.png",
-        tag:   tag   || "expense-tracker",
-        url:   url   || "/",
-      },
+      // Removed data block: Sending data inside webpush causes Android Chrome to 
+      // classify the message as a "data message" and defer it during Doze mode.
+      // By using only webpush.notification and fcmOptions.link, Chrome natively
+      // displays the notification immediately without waking the Service Worker JS.
       fcmOptions: { link: url || "/" },
       headers: { 
         urgency: "high",
