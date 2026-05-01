@@ -64,7 +64,10 @@ const sendFCMToToken = async (fcmToken, { title, body, icon, badge, tag, url }) 
         url:   url   || "/",
       },
       fcmOptions: { link: url || "/" },
-      headers:    { Urgency: "high" },
+      headers: { 
+        urgency: "high",
+        TTL: "86400"
+      },
     },
 
     android: { priority: "high" },

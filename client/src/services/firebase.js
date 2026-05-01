@@ -53,18 +53,10 @@ export const getFirebaseMessaging = async () => {
 export const getFCMToken = async () => {
   const { messaging, vapidKey } = await getFirebaseMessaging();
 
-  // Register firebase-messaging-sw.js explicitly so FCM background handler works
-  let fcmRegistration;
-  try {
-    fcmRegistration = await navigator.serviceWorker.register(
-      "/firebase-messaging-sw.js",
-      { scope: "/" }
-    );
-    console.log("[FCM] firebase-messaging-sw.js registered ✅");
-  } catch (err) {
-    console.warn("[FCM] Could not register firebase-messaging-sw.js, falling back to active SW:", err.message);
-    fcmRegistration = await navigator.serviceWorker.ready;
-  }
+  // Use the existing Vite PWA service worker for FCM instead of registering a separate one.
+  // This prevents sw.js and firebase-messaging-sw.js from fighting over the same scope,
+  // which causes background push notifications to be dropped.
+  const fcmRegistration = await navigator.serviceWorker.ready;
 
   const token = await getToken(messaging, {
     vapidKey,

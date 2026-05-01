@@ -8,7 +8,6 @@ const sendViaFCM = async (dbSub, payload) => {
   const result = await sendFCMToToken(dbSub.fcmToken, payload);
   if (result && result.stale) {
     console.log(`[Push] Removing stale FCM token for sub ${dbSub._id}`);
-    await PushSubscription.findByIdAndDelete(dbSub._id).catch(() => {});
   }
 };
 
@@ -16,7 +15,11 @@ const sendViaFCM = async (dbSub, payload) => {
 
 const sendViaWebPush = async (dbSub, payload) => {
   try {
-    await webpush.sendNotification(dbSub.subscription, JSON.stringify(payload));
+    const options = {
+      urgency: "high",
+      TTL: 86400, // 24 hours
+    };
+    await webpush.sendNotification(dbSub.subscription, JSON.stringify(payload), options);
   } catch (err) {
     // 410 Gone / 404 Not Found = subscription is no longer valid, remove it
     if (err.statusCode === 410 || err.statusCode === 404) {
