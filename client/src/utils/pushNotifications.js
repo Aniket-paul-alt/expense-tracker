@@ -49,7 +49,27 @@ export const subscribeToPush = async () => {
     }
     console.log("[Push] Step 3: VAPID key source:", vapidKey ? "found" : "MISSING");
     if (vapidKey) {
-      vapidSubscription = await registration.pushManager.getSubscription();
+      const existingSub = await registration.pushManager.getSubscription();
+
+      // Detect key mismatch: if the existing subscription was created with a DIFFERENT
+      // VAPID key (e.g. old Firebase key), it will always be rejected by the server.
+      // Force-unsubscribe and create a fresh one with the correct key.
+      if (existingSub) {
+        const existingKey = existingSub.options?.applicationServerKey;
+        const currentKeyBytes = urlBase64ToUint8Array(vapidKey);
+        const existingKeyBytes = existingKey ? new Uint8Array(existingKey) : null;
+        const keyMismatch = !existingKeyBytes ||
+          existingKeyBytes.length !== currentKeyBytes.length ||
+          existingKeyBytes.some((b, i) => b !== currentKeyBytes[i]);
+
+        if (keyMismatch) {
+          console.warn("[Push] Step 3: VAPID key mismatch detected — unsubscribing old subscription.");
+          await existingSub.unsubscribe();
+        } else {
+          vapidSubscription = existingSub;
+        }
+      }
+
       if (!vapidSubscription) {
         console.log("[Push] Step 3: Creating new VAPID subscription...");
         vapidSubscription = await registration.pushManager.subscribe({
