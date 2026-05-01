@@ -41,8 +41,13 @@ export const subscribeToPush = async () => {
   let vapidSubscription = null;
   try {
     const registration = await navigator.serviceWorker.ready;
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || import.meta.env.VITE_VAPID_PUBLIC_KEY;
-    console.log("[Push] Step 3: VAPID key source:", vapidKey ? "found" : "MISSING — check Netlify env vars");
+    let vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+    if (!vapidKey) {
+      console.log("[Push] Step 3: Fetching VAPID key from server...");
+      const res = await axiosBase.get("/push/vapid-key");
+      vapidKey = res.data.publicKey;
+    }
+    console.log("[Push] Step 3: VAPID key source:", vapidKey ? "found" : "MISSING");
     if (vapidKey) {
       vapidSubscription = await registration.pushManager.getSubscription();
       if (!vapidSubscription) {
