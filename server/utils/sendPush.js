@@ -21,12 +21,14 @@ const sendViaWebPush = async (dbSub, payload) => {
     };
     await webpush.sendNotification(dbSub.subscription, JSON.stringify(payload), options);
   } catch (err) {
-    // 410 Gone / 404 Not Found = subscription is no longer valid, remove it
-    if (err.statusCode === 410 || err.statusCode === 404) {
-      console.log(`[Push] Removing stale VAPID subscription ${dbSub._id}`);
+    const code = err.statusCode;
+    const body = err.body || "(no body)";
+    console.error(`[Push] VAPID send failed — HTTP ${code}: ${body}`);
+    // 410 Gone / 404 Not Found = subscription expired → remove it
+    // 401 Unauthorized = VAPID key mismatch → remove it (can't fix without re-subscribe)
+    if (code === 410 || code === 404 || code === 401) {
+      console.log(`[Push] Removing invalid VAPID subscription ${dbSub._id} (HTTP ${code})`);
       await PushSubscription.findByIdAndDelete(dbSub._id).catch(() => {});
-    } else {
-      console.error("[Push] sendNotification error:", err.message);
     }
   }
 };
