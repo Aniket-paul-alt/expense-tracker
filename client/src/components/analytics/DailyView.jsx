@@ -72,7 +72,7 @@ const DailyView = ({ symbol }) => {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Hourly bar chart */}
         <SectionCard
@@ -108,6 +108,23 @@ const DailyView = ({ symbol }) => {
                 symbol={symbol}
                 height={200}
                 showLegend={false}
+              />
+          }
+        </SectionCard>
+
+        {/* Payment Methods pie */}
+        <SectionCard
+          title="By payment method"
+          subtitle="How did you pay?"
+        >
+          {isLoading
+            ? <ChartSkeleton height={200} />
+            : <PieChartWidget
+                data={d?.paymentMethods || []}
+                symbol={symbol}
+                height={200}
+                showLegend={false}
+                nameKey="method"
               />
           }
         </SectionCard>

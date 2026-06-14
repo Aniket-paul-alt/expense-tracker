@@ -123,7 +123,7 @@ const MonthlyView = ({ symbol }) => {
       </SectionCard>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Category pie */}
         <SectionCard title="Category split">
@@ -134,6 +134,20 @@ const MonthlyView = ({ symbol }) => {
                 symbol={symbol}
                 height={240}
                 showLegend={true}
+              />
+          }
+        </SectionCard>
+
+        {/* Payment Methods pie */}
+        <SectionCard title="Payment methods">
+          {isLoading
+            ? <ChartSkeleton height={240} />
+            : <PieChartWidget
+                data={d?.paymentMethods || []}
+                symbol={symbol}
+                height={240}
+                showLegend={true}
+                nameKey="method"
               />
           }
         </SectionCard>

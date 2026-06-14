@@ -157,7 +157,7 @@ const getDailyAnalytics = async (req, res) => {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const [summary, categoryBreakdown, hourlyBreakdown, topExpenses] =
+    const [summary, categoryBreakdown, hourlyBreakdown, topExpenses, paymentMethods] =
       await Promise.all([
         Expense.aggregate(totalInRangePipeline(userId, startOfDay, endOfDay)),
         Expense.aggregate(categoryBreakdownPipeline(userId, startOfDay, endOfDay)),
@@ -189,6 +189,7 @@ const getDailyAnalytics = async (req, res) => {
         ]),
 
         Expense.aggregate(topExpensesPipeline(userId, startOfDay, endOfDay, 3)),
+        Expense.aggregate(paymentMethodPipeline(userId, startOfDay, endOfDay)),
       ]);
 
     return res.status(200).json({
@@ -199,6 +200,7 @@ const getDailyAnalytics = async (req, res) => {
         categoryBreakdown,
         hourlyBreakdown,
         topExpenses,
+        paymentMethods,
       },
     });
   } catch (err) {

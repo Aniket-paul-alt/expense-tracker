@@ -152,7 +152,7 @@ const YearlyView = ({ symbol }) => {
         </SectionCard>
 
         {/* Category pie */}
-        <div className="lg:col-span-2">
+        <div>
           <SectionCard title="Category split" subtitle={`Full year ${year}`}>
             {isLoading
               ? <ChartSkeleton height={240} />
@@ -161,6 +161,22 @@ const YearlyView = ({ symbol }) => {
                   symbol={symbol}
                   height={240}
                   showLegend={true}
+                />
+            }
+          </SectionCard>
+        </div>
+
+        {/* Payment Methods pie */}
+        <div>
+          <SectionCard title="Payment methods" subtitle={`Full year ${year}`}>
+            {isLoading
+              ? <ChartSkeleton height={240} />
+              : <PieChartWidget
+                  data={d?.paymentMethods || []}
+                  symbol={symbol}
+                  height={240}
+                  showLegend={true}
+                  nameKey="method"
                 />
             }
           </SectionCard>

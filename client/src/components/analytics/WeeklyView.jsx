@@ -118,30 +118,14 @@ const WeeklyView = ({ symbol }) => {
 
         {/* Payment methods */}
         <SectionCard title="Payment methods">
-          {isLoading ? <ListSkeleton rows={4}/> : (
-            d?.paymentMethods?.length
-              ? <div className="space-y-3">
-                  {d.paymentMethods.map((pm, i) => (
-                    <div key={pm.method} className="flex items-center gap-3">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: pmColors[i % pmColors.length] }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize">
-                            {pm.method}
-                          </span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{pm.count} txn</span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(pm.total, symbol)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              : <p className="text-sm text-gray-300 text-center py-8">No data</p>
+          {isLoading ? <ChartSkeleton height={240} /> : (
+            <PieChartWidget
+              data={d?.paymentMethods || []}
+              symbol={symbol}
+              height={240}
+              showLegend={true}
+              nameKey="method"
+            />
           )}
         </SectionCard>
       </div>

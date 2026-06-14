@@ -223,7 +223,25 @@ const Dashboard = () => {
       </div>
 
       {/* ── Bottom row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* Payment Methods Pie Chart */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Payment Methods</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">This month</p>
+          </div>
+          {isLoading
+            ? <Skeleton className="h-48 w-full" />
+            : <PieChartWidget
+                data={overview?.paymentMethods || []}
+                symbol={symbol}
+                height={192}
+                showLegend={false}
+                nameKey="method"
+              />
+          }
+        </div>
 
         {/* Category breakdown list */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
