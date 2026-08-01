@@ -1,8 +1,10 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../models/user.model");
 const Category = require("../models/category.model");
 const Expense = require("../models/expense.model");
 const PushSubscription = require("../models/pushSubscription.model");
+const sendEmail = require("../utils/sendEmail");
 
 // ─── Helper: Generate JWT ─────────────────────────────────────────────────────
 
@@ -89,9 +91,13 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("=== LOGIN ATTEMPT ===");
+    console.log("Email:", `"${email}"`);
+    console.log("Password:", `"${password}"`);
 
     // Explicitly select password since it has select: false in schema
     const user = await User.findOne({ email }).select("+password");
+    console.log("User found?", !!user);
 
     if (!user) {
       return res.status(401).json({
@@ -102,6 +108,8 @@ const login = async (req, res) => {
     }
 
     const isMatch = await user.comparePassword(password);
+    console.log("Password match?", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -304,6 +312,76 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// ─── @route   POST /api/auth/forgot-password ─────────────────────────────────
+// ─── @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "There is no user with that email." });
+    }
+
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset url
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    const message = `You are receiving this email because you (or someone else) has requested the reset of a password.\n\nPlease click on the following link to reset your password:\n${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Password Reset Link",
+        message,
+      });
+      res.status(200).json({ success: true, message: "Email sent" });
+    } catch (err) {
+      console.error(err);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({ success: false, message: "Email could not be sent" });
+    }
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ success: false, message: "Something went wrong." });
+  }
+};
+
+// ─── @route   PUT /api/auth/reset-password/:token ────────────────────────────
+// ─── @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    // Get hashed token
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+    }
+
+    // Set new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res);
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ success: false, message: "Something went wrong." });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -311,4 +389,6 @@ module.exports = {
   updateProfile,
   changePassword,
   deleteAccount,
+  forgotPassword,
+  resetPassword,
 };

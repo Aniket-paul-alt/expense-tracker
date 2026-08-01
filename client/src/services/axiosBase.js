@@ -36,10 +36,12 @@ axiosBase.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || "Something went wrong.";
 
-    // Token expired or invalid — force logout
-    if (status === 401) {
+    // Token expired or invalid — force logout (ignore if it's a login attempt)
+    if (status === 401 && !error.config?.url?.includes("/auth/login")) {
       store.dispatch(logout());
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
     // Return a clean error object so every service gets consistent shape

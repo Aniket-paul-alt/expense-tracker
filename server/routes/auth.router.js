@@ -8,6 +8,8 @@ const {
   updateProfile,
   changePassword,
   deleteAccount,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/auth.controller");
 
 const { protect } = require("../middlewares/auth.middleware");
@@ -19,6 +21,8 @@ const {
 // Public routes
 router.post("/register", validateRegister, register);
 router.post("/login",    validateLogin,    login);
+router.post("/forgot-password", forgotPassword);
+router.put("/reset-password/:token", resetPassword);
 
 // Private routes
 router.get("/me",                protect, getMe);

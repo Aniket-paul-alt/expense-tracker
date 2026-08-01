@@ -30,7 +30,7 @@ const validateRegister = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   body("password")
     .notEmpty().withMessage("Password is required")
@@ -45,7 +45,7 @@ const validateLogin = [
     .trim()
     .notEmpty().withMessage("Email is required")
     .isEmail().withMessage("Enter a valid email address")
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
 
   body("password")
     .notEmpty().withMessage("Password is required"),

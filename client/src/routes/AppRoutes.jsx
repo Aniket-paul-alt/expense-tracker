@@ -3,6 +3,8 @@ import ProtectedRoute from "./ProtectedRoutes.jsx";
 import AppLayout from "../components/layout/AppLayout";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 import Dashboard from "../pages/Dashboard";
 import Analytics from "../pages/Analytics";
 import History from "../pages/History";
@@ -22,6 +24,8 @@ const AppRoutes = () => {
       {/* Public */}
       <Route path="/login"    element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
