@@ -1,32 +1,27 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // required for port 587
-    requireTLS: true, // forces encryption
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD,
-    },
-    logger: true,
-    debug: true, // Enables detailed SMTP logs in the terminal
-  });
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Define email options
-  const message = {
-    from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    html: options.html, // Support for HTML format
-  };
+  // Note: For free Resend accounts without a verified domain, 
+  // you MUST send from 'onboarding@resend.dev'.
+  const fromEmail = 'onboarding@resend.dev';
 
-  // Send the email
-  const info = await transporter.sendMail(message);
+  try {
+    const data = await resend.emails.send({
+      from: `${process.env.FROM_NAME || 'ExpenseTracker'} <${fromEmail}>`,
+      to: options.email,
+      subject: options.subject,
+      text: options.message,
+      html: options.html,
+    });
 
-  console.log("Message sent: %s", info.messageId);
+    console.log("Resend message sent:", data);
+    return data;
+  } catch (error) {
+    console.error("Resend Error:", error);
+    throw error;
+  }
 };
 
 module.exports = sendEmail;
