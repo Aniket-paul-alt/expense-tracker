@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios";
+import authService from "../../services/authServices.js";
 
 const schema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -29,8 +29,7 @@ const ResetPassword = () => {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.put(`${apiUrl}/api/auth/reset-password/${token}`, { password: data.password });
+      await authService.resetPassword(token, { password: data.password });
       toast.success("Password reset successful! Please log in.");
       navigate("/login");
     } catch (err) {

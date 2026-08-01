@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios"; // assuming direct axios use or a custom api client
+import authService from "../../services/authServices.js";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -23,8 +23,7 @@ const ForgotPassword = () => {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.post(`${apiUrl}/api/auth/forgot-password`, data);
+      await authService.forgotPassword(data);
       setSuccess(true);
       toast.success("Reset link sent to your email!");
     } catch (err) {

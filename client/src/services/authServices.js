@@ -30,6 +30,16 @@ const authService = {
     const res = await axiosBase.delete("/auth/delete-account", { data });
     return res.data;
   },
+
+  forgotPassword: async (data) => {
+    const res = await axiosBase.post("/auth/forgot-password", data);
+    return res.data;
+  },
+
+  resetPassword: async (token, data) => {
+    const res = await axiosBase.put(`/auth/reset-password/${token}`, data);
+    return res.data;
+  },
 };
 
 export default authService;
